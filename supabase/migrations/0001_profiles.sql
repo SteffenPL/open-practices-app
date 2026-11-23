@@ -20,6 +20,11 @@ create policy "users insert own profile"
 
 create policy "users update own profile"
   on public.profiles for update
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+create policy "users delete own profile"
+  on public.profiles for delete
   using (auth.uid() = id);
 
 -- Auto-provision the profile row on signup, seeding display name and
