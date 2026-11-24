@@ -40,6 +40,7 @@ export interface Practice {
   title: string
   body: string
   image_path: string | null
+  source_url: string | null
   published_at: string
   last_significant_at: string
   updated_at: string

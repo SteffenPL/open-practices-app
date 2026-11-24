@@ -6,6 +6,7 @@ export const PRACTICE_IMAGES_BUCKET = 'practice-images'
 
 export function imageUrl(path: string | null): string | null {
   if (!path) return null
+  if (path.startsWith('http')) return path
   if (!supabase) return path
   const { data } = supabase.storage
     .from(PRACTICE_IMAGES_BUCKET)
@@ -42,6 +43,8 @@ export interface PracticeInput {
   title: string
   body: string
   image_path: string | null
+  /** Raw definition-file URL an Import came from; omit to leave unchanged. */
+  source_url?: string | null
 }
 
 export async function createPractice(
@@ -49,9 +52,14 @@ export async function createPractice(
   input: PracticeInput,
 ): Promise<Practice> {
   if (!supabase) throw new Error('Supabase is not configured')
+  const { source_url, ...rest } = input
   const { data, error } = await supabase
     .from('practices')
-    .insert({ author_id: authorId, ...input })
+    .insert({
+      author_id: authorId,
+      ...rest,
+      ...(source_url !== undefined ? { source_url } : {}),
+    })
     .select(AUTHOR_SELECT)
     .single()
   if (error) throw error
@@ -64,13 +72,15 @@ export async function updatePractice(
   significant: boolean,
 ): Promise<Practice> {
   if (!supabase) throw new Error('Supabase is not configured')
+  const { source_url, ...rest } = input
   const now = new Date().toISOString()
   const { data, error } = await supabase
     .from('practices')
     .update({
-      ...input,
+      ...rest,
       updated_at: now,
       ...(significant ? { last_significant_at: now } : {}),
+      ...(source_url !== undefined ? { source_url } : {}),
     })
     .eq('id', id)
     .select(AUTHOR_SELECT)

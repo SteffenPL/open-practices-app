@@ -18,6 +18,7 @@ import {
   type ElementDraft,
 } from '../lib/elementService'
 import { ElementsEditor } from '../components/ElementsEditor'
+import { ImportForm } from '../components/ImportForm'
 import { provisionTool } from '../lib/toolService'
 import type { Tool } from '../lib/types'
 
@@ -27,6 +28,7 @@ export function EditorPage() {
   const navigate = useNavigate()
   const { session } = useAuth()
   const user = session?.user
+  const [mode, setMode] = useState<'write' | 'import'>('write')
 
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -132,6 +134,25 @@ export function EditorPage() {
 
   return (
     <main className="page">
+      {!isEditing && (
+        <div className="mode-toggle">
+          <button
+            className={mode === 'write' ? 'mode-active' : 'link-like'}
+            onClick={() => setMode('write')}
+          >
+            Write
+          </button>
+          <button
+            className={mode === 'import' ? 'mode-active' : 'link-like'}
+            onClick={() => setMode('import')}
+          >
+            Import from GitHub
+          </button>
+        </div>
+      )}
+      {!isEditing && mode === 'import' ? (
+        <ImportForm />
+      ) : (
       <div className="card editor">
         <h1>{isEditing ? 'Edit practice' : 'New practice'}</h1>
         {error && <p className="error">{error}</p>}
@@ -200,6 +221,7 @@ export function EditorPage() {
           <button onClick={() => navigate(-1)}>Cancel</button>
         </div>
       </div>
+      )}
     </main>
   )
 }

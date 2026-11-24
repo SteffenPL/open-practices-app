@@ -11,6 +11,7 @@ import {
 } from '../lib/practiceService'
 import { getElements } from '../lib/elementService'
 import { formatDate } from '../lib/markdown'
+import { sourceDisplayUrl } from '../lib/importService'
 import type { Element, Practice } from '../lib/types'
 import type { Selection } from '../lib/visibility'
 import { ElementsReader } from '../components/ElementsReader'
@@ -84,6 +85,14 @@ export function PracticePage() {
             {formatDate(practice.published_at)}
             {isSignificantUpdate(practice) &&
               ` · updated ${formatDate(practice.last_significant_at)}`}
+            {practice.source_url && (
+              <>
+                {' '}· imported from{' '}
+                <a href={sourceDisplayUrl(practice.source_url)} target="_blank" rel="noreferrer">
+                  {sourceDisplayUrl(practice.source_url).replace(/^https?:\/\//, '')}
+                </a>
+              </>
+            )}
           </span>
         </p>
         {image && <img className="practice-image" src={image} alt="" />}
