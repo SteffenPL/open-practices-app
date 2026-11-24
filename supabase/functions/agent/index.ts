@@ -53,14 +53,17 @@ async function userClient(req: Request): Promise<
 /** Same provisioning rules as the app's tool service, on the user client. */
 async function resolveToolId(
   client: SupabaseClient,
-  identifier: string,
+  input: string,
 ): Promise<string | null> {
-  const id = identifier.trim()
-  const repoShaped = /^[\w.-]+\/[\w.-]+$/.test(id)
-  const repoUrl = repoShaped ? `https://github.com/${id}` : null
-  const filter = repoUrl
-    ? `apm_id.eq.${id},repo_url.eq.${repoUrl}`
-    : `apm_id.eq.${id}`
+  // Normalize: a GitHub URL becomes owner/repo; identifiers must be
+  // filter-safe (mirrors the app's normalizeToolIdentifier).
+  let id = input.trim().replace(/\/+$/, '')
+  const urlMatch = id.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)/)
+  if (urlMatch) id = `${urlMatch[1]}/${urlMatch[2]}`
+  if (!/^[\w@.-]+\/[\w@.-]+$/.test(id)) return null
+
+  const repoUrl = `https://github.com/${id}`
+  const filter = `apm_id.eq.${id},repo_url.eq.${repoUrl}`
 
   const { data: existing } = await client
     .from('tools')
@@ -71,17 +74,15 @@ async function resolveToolId(
 
   let name = id
   let description: string | null = null
-  if (repoShaped) {
-    try {
-      const res = await fetch(`https://api.github.com/repos/${id}`)
-      if (res.ok) {
-        const repo = await res.json()
-        if (repo.name) name = repo.name
-        if (repo.description) description = repo.description
-      }
-    } catch {
-      // best-effort metadata
+  try {
+    const res = await fetch(`https://api.github.com/repos/${id}`)
+    if (res.ok) {
+      const repo = await res.json()
+      if (repo.name) name = repo.name
+      if (repo.description) description = repo.description
     }
+  } catch {
+    // best-effort metadata
   }
 
   const { data: tool, error } = await client
@@ -89,8 +90,40 @@ async function resolveToolId(
     .insert({ apm_id: id, repo_url: repoUrl, name, description })
     .select('id')
     .single()
-  if (error) return null
+  if (error) {
+    if (error.code === '23505') {
+      // Lost a provisioning race: use the row that won.
+      const { data: raced } = await client
+        .from('tools')
+        .select('id')
+        .or(filter)
+        .maybeSingle()
+      if (raced) return raced.id as string
+    }
+    return null
+  }
   return tool.id as string
+}
+
+/**
+ * The raw file URL a practice's definition is fetched from (Sync).
+ * Frontmatter `source` may be a repo URL or a repo blob URL; derive the
+ * raw default-branch file URL from it.
+ */
+function toFetchableSourceUrl(url: string): string {
+  const trimmed = url.trim()
+  if (/^https?:\/\/raw\.githubusercontent\.com\//.test(trimmed)) return trimmed
+  const blob = trimmed.match(
+    /^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/blob\/[^/]+\/(.+)$/,
+  )
+  if (blob) {
+    return `https://raw.githubusercontent.com/${blob[1]}/${blob[2]}/HEAD/${blob[3]}`
+  }
+  const repo = trimmed.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)/)
+  if (repo) {
+    return `https://raw.githubusercontent.com/${repo[1]}/${repo[2]}/HEAD/practice.md`
+  }
+  return trimmed
 }
 
 async function persistElements(
@@ -165,7 +198,7 @@ Deno.serve(async (req) => {
   if (!auth) {
     return json(401, {
       error:
-        'Missing or invalid Authorization: Bearer <Agent Access token>. The token expires after ~1 hour.',
+        'Missing or invalid Authorization: Bearer grant. Get an Agent Access grant from the user (expires after ~1 hour).',
     })
   }
   const { client, userId } = auth
@@ -180,7 +213,9 @@ Deno.serve(async (req) => {
           title: definition.title,
           body: definition.body,
           image_path: definition.image,
-          source_url: definition.source,
+          source_url: definition.source
+            ? toFetchableSourceUrl(definition.source)
+            : null,
         })
         .select('id')
         .single()
@@ -210,7 +245,9 @@ Deno.serve(async (req) => {
           title: definition.title,
           body: definition.body,
           image_path: definition.image,
-          source_url: definition.source,
+          source_url: definition.source
+            ? toFetchableSourceUrl(definition.source)
+            : null,
           updated_at: now,
           ...(body.significant ? { last_significant_at: now } : {}),
         })
@@ -245,7 +282,12 @@ Deno.serve(async (req) => {
       }))
       const definition: PracticeDefinition = {
         title: practice.title as string,
-        image: (practice.image_path as string | null) ?? null,
+        // Definitions promise full URLs; editor-uploaded storage paths
+        // don't conform, so they are omitted rather than emitted broken.
+        image:
+          practice.image_path && /^https?:\/\//.test(practice.image_path as string)
+            ? (practice.image_path as string)
+            : null,
         source: (practice.source_url as string | null) ?? null,
         body: practice.body as string,
         elements: sorted.map((element: Record<string, unknown>) => ({

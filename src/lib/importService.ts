@@ -1,5 +1,6 @@
 import type { PracticeDefinition } from './practiceDefinition'
 import type { ElementDraft } from './elementService'
+import { provisionTool } from './toolService'
 
 /** Parse owner/repo out of a GitHub URL. */
 export function parseRepoUrl(repoUrl: string): { owner: string; repo: string } {
@@ -24,6 +25,27 @@ export function sourceDisplayUrl(rawUrl: string): string {
   )
   if (match) return `https://github.com/${match[1]}/${match[2]}`
   return rawUrl
+}
+
+/**
+ * The URL Sync fetches a definition from. Practices store a raw file URL;
+ * if a frontmatter `source` gave a repo URL (or repo path), derive the raw
+ * default-branch file URL from it.
+ */
+export function toFetchableSourceUrl(url: string): string {
+  const trimmed = url.trim()
+  if (/^https?:\/\/raw\.githubusercontent\.com\//.test(trimmed)) {
+    return trimmed
+  }
+  const blob = trimmed.match(
+    /^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/blob\/[^/]+\/(.+)$/,
+  )
+  if (blob) return `https://raw.githubusercontent.com/${blob[1]}/${blob[2]}/HEAD/${blob[3]}`
+  const repo = trimmed.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)/)
+  if (repo) {
+    return `https://raw.githubusercontent.com/${repo[1]}/${repo[2]}/HEAD/${DEFAULT_PATH}`
+  }
+  return trimmed
 }
 
 export const DEFAULT_PATH = 'practice.md'
@@ -64,16 +86,20 @@ export async function fetchDefinition(
 
 /**
  * Convert a parsed definition into editor drafts, resolving tool
- * identifiers to Tool catalog ids via the given resolver.
+ * identifiers to Tool catalog ids (with per-identifier caching; failed
+ * lookups leave the option unlinked rather than failing the whole import).
  */
-export async function definitionToDrafts(
+export async function provisionDrafts(
   definition: PracticeDefinition,
-  resolveTool: (identifier: string) => Promise<string | null>,
 ): Promise<ElementDraft[]> {
   const cache = new Map<string, string | null>()
   const resolve = async (identifier: string) => {
     if (!cache.has(identifier)) {
-      cache.set(identifier, await resolveTool(identifier))
+      try {
+        cache.set(identifier, (await provisionTool(identifier)).id)
+      } catch {
+        cache.set(identifier, null)
+      }
     }
     return cache.get(identifier) ?? null
   }

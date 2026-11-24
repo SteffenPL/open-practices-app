@@ -120,6 +120,13 @@ export function parseDefinition(markdown: string): PracticeDefinition {
     )
   }
 
+  const image = meta.image?.trim() ?? ''
+  if (image && !/^https?:\/\//.test(image)) {
+    throw new DefinitionError(
+      'Frontmatter image must be a full URL (https://…); relative paths are not supported.',
+    )
+  }
+
   const bodyParts: string[] = []
   const elements: DefinitionElement[] = []
   let current: DefinitionElement | null = null
@@ -246,7 +253,9 @@ export function parseDefinition(markdown: string): PracticeDefinition {
 
   endAll()
 
-  // Resolve visibility directives: option names -> ids of earlier elements.
+  // Resolve visibility directives: option names -> ids. Directives may only
+  // reference options of this or an EARLIER element; forward references
+  // are rejected with an actionable error.
   const idByName = new Map<string, string>()
   for (const element of elements) {
     for (const option of element.options) {
@@ -268,7 +277,7 @@ export function parseDefinition(markdown: string): PracticeDefinition {
 
   return {
     title,
-    image: meta.image?.trim() || null,
+    image: image || null,
     source: meta.source?.trim() || null,
     body: parseBody(bodyParts),
     elements,

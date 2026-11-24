@@ -5,11 +5,10 @@ import {
   createPractice,
 } from '../lib/practiceService'
 import { saveElements } from '../lib/elementService'
-import { provisionTool } from '../lib/toolService'
 import {
   DEFAULT_PATH,
-  definitionToDrafts,
   fetchDefinition,
+  provisionDrafts,
 } from '../lib/importService'
 import {
   parseDefinition,
@@ -53,13 +52,7 @@ export function ImportForm() {
     setPublishing(true)
     setError(null)
     try {
-      const drafts = await definitionToDrafts(parsed, async (identifier) => {
-        try {
-          return (await provisionTool(identifier)).id
-        } catch {
-          return null
-        }
-      })
+      const drafts = await provisionDrafts(parsed)
       const practice = await createPractice(user.id, {
         title: parsed.title,
         body: parsed.body,

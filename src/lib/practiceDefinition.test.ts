@@ -123,6 +123,55 @@ title: x
     expect(() => parseDefinition('---\ntitle: x\nbody')).toThrow(/closed/)
   })
 
+  it('errors on a relative image path', () => {
+    const md = '---\ntitle: x\nimage: ./pic.png\n---\nbody'
+    expect(() => parseDefinition(md)).toThrow(/full URL/)
+  })
+
+  it('errors on directives referencing later elements', () => {
+    const md = `---
+title: x
+---
+
+## Element: One?
+
+> Requires: c
+
+| Option | Why/when | Tool |
+| --- | --- | --- |
+| a | first | |
+| b | second | |
+
+## Element: Two?
+
+| Option | Why/when | Tool |
+| --- | --- | --- |
+| c | third | |
+| d | fourth | |
+`
+    expect(() => parseDefinition(md)).toThrow(/no such option/)
+  })
+
+  it('allows directives referencing the same element', () => {
+    const md = `---
+title: x
+---
+
+## Element: One?
+
+> Incompatible: b
+
+| Option | Why/when | Tool |
+| --- | --- | --- |
+| a | first | |
+| b | second | |
+`
+    const parsed = parseDefinition(md)
+    expect(parsed.elements[0].reject_options).toEqual([
+      parsed.elements[0].options[1].id,
+    ])
+  })
+
   it('errors on unknown directive option names', () => {
     const md = `---
 title: x

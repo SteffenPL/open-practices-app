@@ -2,42 +2,52 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { updatePractice } from '../lib/practiceService'
 import { saveElements } from '../lib/elementService'
-import { provisionTool } from '../lib/toolService'
-import { definitionToDrafts, sourceDisplayUrl } from '../lib/importService'
-import { parseDefinition } from '../lib/practiceDefinition'
+import { provisionDrafts, sourceDisplayUrl, toFetchableSourceUrl } from '../lib/importService'
+import { parseDefinition, type PracticeDefinition } from '../lib/practiceDefinition'
 import type { Practice } from '../lib/types'
 
 /**
  * Author-only re-pull of an imported practice's definition.
- * The repo is canonical: the sync overwrites the platform copy entirely.
+ * Fetches and parses the source first so the author confirms against the
+ * real result; the repo is canonical, so the sync overwrites everything.
  */
 export function SyncButton({ practice }: { practice: Practice }) {
   const navigate = useNavigate()
-  const [open, setOpen] = useState(false)
+  const [parsed, setParsed] = useState<PracticeDefinition | null>(null)
   const [significant, setSignificant] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const loadSource = async () => {
+    setLoading(true)
+    setError(null)
+    setParsed(null)
+    try {
+      const res = await fetch(toFetchableSourceUrl(practice.source_url as string))
+      if (!res.ok) {
+        throw new Error(`Could not fetch the source file (HTTP ${res.status}).`)
+      }
+      setParsed(parseDefinition(await res.text()))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Fetching the source failed.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const sync = async () => {
+    if (!parsed) return
     setSyncing(true)
     setError(null)
     try {
-      const res = await fetch(practice.source_url as string)
-      if (!res.ok) throw new Error(`Could not fetch the source file (HTTP ${res.status}).`)
-      const definition = parseDefinition(await res.text())
-      const drafts = await definitionToDrafts(definition, async (identifier) => {
-        try {
-          return (await provisionTool(identifier)).id
-        } catch {
-          return null
-        }
-      })
+      const drafts = await provisionDrafts(parsed)
       await updatePractice(
         practice.id,
         {
-          title: definition.title,
-          body: definition.body,
-          image_path: definition.image,
+          title: parsed.title,
+          body: parsed.body,
+          image_path: parsed.image,
         },
         significant,
       )
@@ -46,20 +56,29 @@ export function SyncButton({ practice }: { practice: Practice }) {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Sync failed.')
       setSyncing(false)
-      setOpen(false)
     }
   }
 
   return (
     <>
-      <button onClick={() => setOpen(true)}>Sync now</button>
-      {open && (
+      <button disabled={loading} onClick={() => void loadSource()}>
+        {loading ? 'Fetching…' : 'Sync now'}
+      </button>
+      {parsed && (
         <div className="sync-confirm">
           <p className="muted">
-            Re-pulls the definition from{' '}
+            From{' '}
             {sourceDisplayUrl(practice.source_url as string).replace(/^https?:\/\//, '')}{' '}
-            and <strong>overwrites everything</strong> — including edits made
-            here.
+            — <strong>overwrites everything</strong>, including edits made here.
+          </p>
+          <p>
+            <strong>{parsed.title}</strong> · {parsed.elements.length} element
+            {parsed.elements.length === 1 ? '' : 's'}
+            {parsed.elements.map((element) => (
+              <span key={element.id} className="muted block">
+                {element.name}: {element.options.map((o) => o.name).join(', ')}
+              </span>
+            ))}
           </p>
           <label>
             <input
@@ -87,7 +106,7 @@ export function SyncButton({ practice }: { practice: Practice }) {
             >
               {syncing ? 'Syncing…' : 'Overwrite and sync'}
             </button>
-            <button onClick={() => setOpen(false)}>Cancel</button>
+            <button onClick={() => setParsed(null)}>Cancel</button>
           </div>
         </div>
       )}
