@@ -15,6 +15,7 @@ import type { Element, Practice } from '../lib/types'
 import type { Selection } from '../lib/visibility'
 import { ElementsReader } from '../components/ElementsReader'
 import { CompiledPanel } from '../components/CompiledPanel'
+import { CommentsSection } from '../components/CommentsSection'
 
 export function PracticePage() {
   const { id } = useParams<{ id: string }>()
@@ -90,6 +91,10 @@ export function PracticePage() {
         {elements.length > 0 && (
           <CompiledPanel elements={elements} selection={selection} />
         )}
+        <CommentsSection
+          practiceId={practice.id}
+          practiceAuthorId={practice.author_id}
+        />
         {isAuthor && (
           <div className="author-controls">
             <Link to={`/edit/${practice.id}`}>Edit</Link>
