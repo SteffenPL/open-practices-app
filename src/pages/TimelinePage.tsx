@@ -63,16 +63,25 @@ export function TimelinePage() {
             <div className="practice-card-body">
               <h2>{practice.title}</h2>
               <p className="teaser">{teaser(practice.body)}</p>
-              <p className="muted">
-                {practice.author?.display_name || 'Unknown'} ·{' '}
-                {formatDate(
-                  isSignificantUpdate(practice)
-                    ? practice.last_significant_at
-                    : practice.published_at,
+              <p className="muted practice-card-meta">
+                {practice.author?.avatar_url && (
+                  <img
+                    className="avatar avatar-sm"
+                    src={practice.author.avatar_url}
+                    alt=""
+                  />
                 )}
-                {isSignificantUpdate(practice) && (
-                  <span className="updated-badge">updated</span>
-                )}
+                <span>
+                  {practice.author?.display_name || 'Unknown'} ·{' '}
+                  {formatDate(
+                    isSignificantUpdate(practice)
+                      ? practice.last_significant_at
+                      : practice.published_at,
+                  )}
+                  {isSignificantUpdate(practice) && (
+                    <span className="updated-badge">updated</span>
+                  )}
+                </span>
               </p>
             </div>
           </Link>

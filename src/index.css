@@ -246,6 +246,13 @@ a.primary-as-link {
   color: #4b4b55;
 }
 
+.practice-meta,
+.practice-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 @media (prefers-color-scheme: dark) {
   .teaser {
     color: #b5b5c0;
@@ -390,6 +397,11 @@ a.primary-as-link {
 .option-editor {
   display: grid;
   grid-template-columns: 1fr 2fr auto;
+  gap: 0.4rem;
+}
+
+.option-editor-actions {
+  display: flex;
   gap: 0.4rem;
 }
 

@@ -33,7 +33,7 @@ function CommentRow({
 
   const save = async () => {
     try {
-      await updateComment(comment, draft)
+      await updateComment(comment.id, comment.body, draft)
       setEditing(false)
       onChanged() // triggers a reload of the comment list
     } catch (e) {
@@ -95,9 +95,6 @@ function CommentRow({
             <button className="link-like" onClick={() => void remove()}>
               Delete
             </button>
-            <button className="link-like" onClick={() => void toggleHistory()}>
-              {versions ? 'Hide history' : 'History'}
-            </button>
           </>
         )}
         {!isOwn && canDelete && (
@@ -105,6 +102,9 @@ function CommentRow({
             Delete
           </button>
         )}
+        <button className="link-like" onClick={() => void toggleHistory()}>
+          {versions ? 'Hide history' : 'History'}
+        </button>
       </div>
       {versions && (
         <div className="comment-versions">

@@ -5,11 +5,11 @@ import remarkGfm from 'remark-gfm'
 import { useAuth } from '../auth/useAuth'
 import {
   deletePractice,
-  getElements,
   getPractice,
   imageUrl,
   isSignificantUpdate,
 } from '../lib/practiceService'
+import { getElements } from '../lib/elementService'
 import { formatDate } from '../lib/markdown'
 import type { Element, Practice } from '../lib/types'
 import type { Selection } from '../lib/visibility'
@@ -63,7 +63,7 @@ export function PracticePage() {
   const image = imageUrl(practice.image_path)
 
   const onDelete = async () => {
-    await deletePractice(practice.id)
+    await deletePractice(practice)
     navigate('/')
   }
 
@@ -71,11 +71,20 @@ export function PracticePage() {
     <main className="page">
       <article className="card practice-detail">
         <h1>{practice.title}</h1>
-        <p className="muted">
-          {practice.author?.display_name || 'Unknown'} · published{' '}
-          {formatDate(practice.published_at)}
-          {isSignificantUpdate(practice) &&
-            ` · updated ${formatDate(practice.last_significant_at)}`}
+        <p className="muted practice-meta">
+          {practice.author?.avatar_url && (
+            <img
+              className="avatar avatar-sm"
+              src={practice.author.avatar_url}
+              alt=""
+            />
+          )}
+          <span>
+            {practice.author?.display_name || 'Unknown'} · published{' '}
+            {formatDate(practice.published_at)}
+            {isSignificantUpdate(practice) &&
+              ` · updated ${formatDate(practice.last_significant_at)}`}
+          </span>
         </p>
         {image && <img className="practice-image" src={image} alt="" />}
         <div className="markdown-body">

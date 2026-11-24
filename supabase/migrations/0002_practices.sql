@@ -1,4 +1,5 @@
--- Practices: published articles about a person's working setup.
+-- Practices: the published unit of the platform. A Practice describes a
+-- person's working setup and may contain Elements for readers to walk.
 create table public.practices (
   id uuid primary key default gen_random_uuid(),
   author_id uuid not null references public.profiles(id) on delete cascade,

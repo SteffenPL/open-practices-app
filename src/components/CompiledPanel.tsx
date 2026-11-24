@@ -8,10 +8,19 @@ interface Props {
   selection: Selection
 }
 
-function CopyButton({ text, label }: { text: string; label: string }) {
+function CopyButton({
+  text,
+  label,
+  disabled,
+}: {
+  text: string
+  label: string
+  disabled?: boolean
+}) {
   const [copied, setCopied] = useState(false)
   return (
     <button
+      disabled={disabled}
       onClick={() => {
         void navigator.clipboard.writeText(text).then(() => {
           setCopied(true)
@@ -37,7 +46,11 @@ export function CompiledPanel({ elements, selection }: Props) {
       <div className="compiled-block">
         <div className="compiled-block-head">
           <span className="muted">Terminal</span>
-          <CopyButton text={compiled.command} label="Copy command" />
+          <CopyButton
+            text={compiled.command}
+            label="Copy command"
+            disabled={compiled.apmIds.length === 0}
+          />
         </div>
         <pre>
           <code>{compiled.command}</code>
@@ -46,7 +59,11 @@ export function CompiledPanel({ elements, selection }: Props) {
       <div className="compiled-block">
         <div className="compiled-block-head">
           <span className="muted">apm.yml</span>
-          <CopyButton text={compiled.yaml} label="Copy YAML" />
+          <CopyButton
+            text={compiled.yaml}
+            label="Copy YAML"
+            disabled={compiled.apmIds.length === 0}
+          />
         </div>
         <pre>
           <code>{compiled.yaml}</code>

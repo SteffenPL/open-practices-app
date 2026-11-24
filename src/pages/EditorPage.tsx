@@ -1,19 +1,22 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import MDEditor from '@uiw/react-md-editor'
 import { useAuth } from '../auth/useAuth'
 import {
   createPractice,
   deletePracticeImage,
-  getElements,
   getPractice,
   imageUrl,
-  saveElements,
-  toElementDrafts,
   updatePractice,
   uploadPracticeImage,
-  type ElementDraft,
 } from '../lib/practiceService'
+import {
+  elementDraftError,
+  getElements,
+  saveElements,
+  toElementDrafts,
+  type ElementDraft,
+} from '../lib/elementService'
 import { ElementsEditor } from '../components/ElementsEditor'
 import { provisionTool } from '../lib/toolService'
 import type { Tool } from '../lib/types'
@@ -37,7 +40,8 @@ export function EditorPage() {
   const fileInput = useRef<HTMLInputElement>(null)
 
   // Load the existing practice once when editing.
-  if (id && loadedId !== id && user) {
+  useEffect(() => {
+    if (!id || loadedId === id || !user) return
     setLoadedId(id)
     getPractice(id)
       .then((practice) => {
@@ -64,7 +68,7 @@ export function EditorPage() {
       .catch((e) =>
         setError(e instanceof Error ? e.message : 'Failed to load practice'),
       )
-  }
+  }, [id, loadedId, user])
 
   if (!user) {
     return (
@@ -100,6 +104,11 @@ export function EditorPage() {
   const save = async () => {
     if (!title.trim()) {
       setError('A practice needs a title.')
+      return
+    }
+    const elementError = elementDraftError(elements)
+    if (elementError) {
+      setError(elementError)
       return
     }
     setSaving(true)

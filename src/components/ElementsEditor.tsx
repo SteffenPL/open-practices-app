@@ -3,7 +3,7 @@ import {
   emptyElementDraft,
   emptyOptionDraft,
   type ElementDraft,
-} from '../lib/practiceService'
+} from '../lib/elementService'
 import type { Tool } from '../lib/types'
 
 interface Props {
@@ -24,6 +24,29 @@ function choiceFor(draft: ElementDraft, optionId: string): VisibilityChoice {
 export function ElementsEditor({ drafts, onChange, toolsById, linkTool }: Props) {
   const update = (index: number, patch: Partial<ElementDraft>) => {
     onChange(drafts.map((d, i) => (i === index ? { ...d, ...patch } : d)))
+  }
+
+  const updateOption = (
+    elementIndex: number,
+    optionIndex: number,
+    patch: Partial<ElementDraft['options'][number]>,
+  ) => {
+    const draft = drafts[elementIndex]
+    update(elementIndex, {
+      options: draft.options.map((o, i) =>
+        i === optionIndex ? { ...o, ...patch } : o,
+      ),
+    })
+  }
+
+  const moveOption = (elementIndex: number, optionIndex: number, delta: number) => {
+    const draft = drafts[elementIndex]
+    const target = optionIndex + delta
+    if (target < 0 || target >= draft.options.length) return
+    const options = [...draft.options]
+    const [item] = options.splice(optionIndex, 1)
+    options.splice(target, 0, item)
+    update(elementIndex, { options })
   }
 
   const move = (index: number, delta: number) => {
@@ -101,58 +124,54 @@ export function ElementsEditor({ drafts, onChange, toolsById, linkTool }: Props)
                 <input
                   value={option.name}
                   onChange={(e) =>
-                    update(index, {
-                      options: draft.options.map((o, i) =>
-                        i === optionIndex
-                          ? { ...o, name: e.target.value }
-                          : o,
-                      ),
-                    })
+                    updateOption(index, optionIndex, { name: e.target.value })
                   }
                   placeholder="Option name (e.g. superpowers)"
                 />
                 <input
                   value={option.description}
                   onChange={(e) =>
-                    update(index, {
-                      options: draft.options.map((o, i) =>
-                        i === optionIndex
-                          ? { ...o, description: e.target.value }
-                          : o,
-                      ),
+                    updateOption(index, optionIndex, {
+                      description: e.target.value,
                     })
                   }
                   placeholder="When is this the right choice?"
                 />
-                <button
-                  className="danger"
-                  onClick={() =>
-                    update(index, {
-                      options: draft.options.filter(
-                        (_, i) => i !== optionIndex,
-                      ),
-                    })
-                  }
-                >
-                  Remove
-                </button>
+                <div className="option-editor-actions">
+                  <button
+                    onClick={() => moveOption(index, optionIndex, -1)}
+                    aria-label="Move option up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    onClick={() => moveOption(index, optionIndex, 1)}
+                    aria-label="Move option down"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    className="danger"
+                    onClick={() =>
+                      update(index, {
+                        options: draft.options.filter(
+                          (_, i) => i !== optionIndex,
+                        ),
+                      })
+                    }
+                  >
+                    Remove
+                  </button>
+                </div>
                 <ToolLinker
                   option={option}
                   tool={option.tool_id ? toolsById[option.tool_id] : undefined}
                   onLink={async (identifier) => {
                     const tool = await linkTool(identifier)
-                    update(index, {
-                      options: draft.options.map((o, i) =>
-                        i === optionIndex ? { ...o, tool_id: tool.id } : o,
-                      ),
-                    })
+                    updateOption(index, optionIndex, { tool_id: tool.id })
                   }}
                   onUnlink={() =>
-                    update(index, {
-                      options: draft.options.map((o, i) =>
-                        i === optionIndex ? { ...o, tool_id: null } : o,
-                      ),
-                    })
+                    updateOption(index, optionIndex, { tool_id: null })
                   }
                 />
               </div>

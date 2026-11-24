@@ -1,42 +1,8 @@
 import { supabase } from './supabase'
-import type { Element, Practice } from './types'
+import { AUTHOR_SELECT } from './selects'
+import type { Practice } from './types'
 
 export const PRACTICE_IMAGES_BUCKET = 'practice-images'
-
-/** Authoring-time Element shape (client-generated ids, no rows yet). */
-export interface OptionDraft {
-  id: string
-  name: string
-  description: string
-  tool_id: string | null
-}
-
-export interface ElementDraft {
-  id: string
-  name: string
-  description: string
-  require_options: string[]
-  reject_options: string[]
-  options: OptionDraft[]
-}
-
-export function emptyElementDraft(): ElementDraft {
-  return {
-    id: crypto.randomUUID(),
-    name: '',
-    description: '',
-    require_options: [],
-    reject_options: [],
-    options: [
-      { id: crypto.randomUUID(), name: '', description: '', tool_id: null },
-      { id: crypto.randomUUID(), name: '', description: '', tool_id: null },
-    ],
-  }
-}
-
-export function emptyOptionDraft(): OptionDraft {
-  return { id: crypto.randomUUID(), name: '', description: '', tool_id: null }
-}
 
 export function imageUrl(path: string | null): string | null {
   if (!path) return null
@@ -54,7 +20,7 @@ export async function listPractices(
   if (!supabase) return []
   const { data, error } = await supabase
     .from('practices')
-    .select('*, author:profiles(display_name, avatar_url)')
+    .select(AUTHOR_SELECT)
     .order('last_significant_at', { ascending: false })
     .range(from, from + count - 1)
   if (error) throw error
@@ -65,7 +31,7 @@ export async function getPractice(id: string): Promise<Practice | null> {
   if (!supabase) return null
   const { data, error } = await supabase
     .from('practices')
-    .select('*, author:profiles(display_name, avatar_url)')
+    .select(AUTHOR_SELECT)
     .eq('id', id)
     .single()
   if (error) throw error
@@ -86,7 +52,7 @@ export async function createPractice(
   const { data, error } = await supabase
     .from('practices')
     .insert({ author_id: authorId, ...input })
-    .select('*, author:profiles(display_name, avatar_url)')
+    .select(AUTHOR_SELECT)
     .single()
   if (error) throw error
   return data as Practice
@@ -107,21 +73,29 @@ export async function updatePractice(
       ...(significant ? { last_significant_at: now } : {}),
     })
     .eq('id', id)
-    .select('*, author:profiles(display_name, avatar_url)')
+    .select(AUTHOR_SELECT)
     .single()
   if (error) throw error
   return data as Practice
 }
 
-export async function deletePractice(id: string): Promise<void> {
+export async function deletePractice(
+  practice: Pick<Practice, 'id' | 'image_path'>,
+): Promise<void> {
   if (!supabase) throw new Error('Supabase is not configured')
-  const { error } = await supabase.from('practices').delete().eq('id', id)
+  if (practice.image_path) {
+    await supabase.storage
+      .from(PRACTICE_IMAGES_BUCKET)
+      .remove([practice.image_path])
+  }
+  const { error } = await supabase
+    .from('practices')
+    .delete()
+    .eq('id', practice.id)
   if (error) throw error
 }
 
-export async function uploadPracticeImage(
-  file: File,
-): Promise<string> {
+export async function uploadPracticeImage(file: File): Promise<string> {
   if (!supabase) throw new Error('Supabase is not configured')
   const path = `${crypto.randomUUID()}/${file.name}`
   const { error } = await supabase.storage
@@ -141,92 +115,4 @@ export function isSignificantUpdate(practice: Practice): boolean {
     new Date(practice.last_significant_at).getTime() >
     new Date(practice.published_at).getTime()
   )
-}
-
-// --- Elements & Options ---
-
-export async function getElements(practiceId: string): Promise<Element[]> {
-  if (!supabase) return []
-  const { data, error } = await supabase
-    .from('elements')
-    .select('*, options(*, tool:tools(*))')
-    .eq('practice_id', practiceId)
-    .order('position', { ascending: true })
-  if (error) throw error
-  const elements = (data ?? []) as Element[]
-  for (const element of elements) {
-    element.options.sort((a, b) => a.position - b.position)
-  }
-  return elements
-}
-
-export function toElementDrafts(elements: Element[]): ElementDraft[] {
-  return elements.map((element) => ({
-    id: element.id,
-    name: element.name,
-    description: element.description ?? '',
-    require_options: element.require_options,
-    reject_options: element.reject_options,
-    options: element.options.map((option) => ({
-      id: option.id,
-      name: option.name,
-      description: option.description ?? '',
-      tool_id: option.tool_id,
-    })),
-  }))
-}
-
-/**
- * Persist the full set of a Practice's Elements and Options.
- * Replaces everything: delete-all then re-insert, using client-generated
- * stable ids so visibility rules keep referencing valid Option ids.
- */
-export async function saveElements(
-  practiceId: string,
-  drafts: ElementDraft[],
-): Promise<void> {
-  if (!supabase) throw new Error('Supabase is not configured')
-
-  const valid = drafts.filter((draft) => draft.name.trim().length > 0)
-
-  const { error: deleteError } = await supabase
-    .from('elements')
-    .delete()
-    .eq('practice_id', practiceId)
-  if (deleteError) throw deleteError
-
-  if (valid.length === 0) return
-
-  const { error: elementsError } = await supabase.from('elements').insert(
-    valid.map((draft, index) => ({
-      id: draft.id,
-      practice_id: practiceId,
-      position: index,
-      name: draft.name.trim(),
-      description: draft.description.trim() || null,
-      require_options: draft.require_options,
-      reject_options: draft.reject_options,
-    })),
-  )
-  if (elementsError) throw elementsError
-
-  const optionRows = valid.flatMap((draft) =>
-    draft.options
-      .filter((option) => option.name.trim().length > 0)
-      .map((option, index) => ({
-        id: option.id,
-        element_id: draft.id,
-        position: index,
-        name: option.name.trim(),
-        description: option.description.trim() || null,
-        tool_id: option.tool_id,
-      })),
-  )
-
-  if (optionRows.length > 0) {
-    const { error: optionsError } = await supabase
-      .from('options')
-      .insert(optionRows)
-    if (optionsError) throw optionsError
-  }
 }
