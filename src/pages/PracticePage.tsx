@@ -17,6 +17,7 @@ import type { Selection } from '../lib/visibility'
 import { ElementsReader } from '../components/ElementsReader'
 import { CompiledPanel } from '../components/CompiledPanel'
 import { CommentsSection } from '../components/CommentsSection'
+import { SyncButton } from '../components/SyncButton'
 
 export function PracticePage() {
   const { id } = useParams<{ id: string }>()
@@ -116,6 +117,7 @@ export function PracticePage() {
         {isAuthor && (
           <div className="author-controls">
             <Link to={`/edit/${practice.id}`}>Edit</Link>
+            {practice.source_url && <SyncButton practice={practice} />}
             {confirmingDelete ? (
               <>
                 <button className="danger" onClick={() => void onDelete()}>

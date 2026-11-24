@@ -390,6 +390,21 @@ a.primary-as-link {
   margin: 0;
 }
 
+/* Sync */
+
+.sync-confirm {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sync-confirm label {
+  font-weight: 400;
+}
+
 /* Elements editor & reader */
 
 .elements-editor {
