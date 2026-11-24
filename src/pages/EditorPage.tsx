@@ -5,11 +5,16 @@ import { useAuth } from '../auth/useAuth'
 import {
   createPractice,
   deletePracticeImage,
+  getElements,
   getPractice,
   imageUrl,
+  saveElements,
+  toElementDrafts,
   updatePractice,
   uploadPracticeImage,
+  type ElementDraft,
 } from '../lib/practiceService'
+import { ElementsEditor } from '../components/ElementsEditor'
 
 export function EditorPage() {
   const { id } = useParams<{ id: string }>()
@@ -21,6 +26,7 @@ export function EditorPage() {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [imagePath, setImagePath] = useState<string | null>(null)
+  const [elements, setElements] = useState<ElementDraft[]>([])
   const [significant, setSignificant] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,6 +45,9 @@ export function EditorPage() {
         setTitle(practice.title)
         setBody(practice.body)
         setImagePath(practice.image_path)
+        getElements(practice.id)
+          .then((els) => setElements(toElementDrafts(els)))
+          .catch(() => setElements([]))
       })
       .catch((e) =>
         setError(e instanceof Error ? e.message : 'Failed to load practice'),
@@ -81,9 +90,11 @@ export function EditorPage() {
       const input = { title: title.trim(), body, image_path: imagePath }
       if (isEditing && id) {
         await updatePractice(id, input, significant)
+        await saveElements(id, elements)
         navigate(`/practice/${id}`)
       } else {
         const practice = await createPractice(user.id, input)
+        await saveElements(practice.id, elements)
         navigate(`/practice/${practice.id}`)
       }
     } catch (e) {
@@ -122,6 +133,8 @@ export function EditorPage() {
 
         <label>Description</label>
         <MDEditor value={body} onChange={(v) => setBody(v ?? '')} height={300} />
+
+        <ElementsEditor drafts={elements} onChange={setElements} />
 
         {isEditing && (
           <fieldset className="significance">

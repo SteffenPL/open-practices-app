@@ -350,3 +350,105 @@ a.primary-as-link {
 .load-more {
   align-self: center;
 }
+
+/* Elements editor & reader */
+
+.elements-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.element-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+.element-editor-head {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.element-editor-head input {
+  flex: 1;
+}
+
+.element-editor-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.options-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.option-editor {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  gap: 0.4rem;
+}
+
+.visibility-rules {
+  border-top: 1px dashed rgba(0, 0, 0, 0.12);
+  padding-top: 0.5rem;
+}
+
+.visibility-rule {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-weight: 400;
+}
+
+.elements-reader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.element-card h3 {
+  margin: 0 0 0.4rem;
+}
+
+.option-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.option-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  cursor: pointer;
+  max-width: 16rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .option-card {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.option-card.selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+.option-card-name {
+  font-weight: 600;
+}
+
+.option-card-desc {
+  color: #6b6b76;
+  font-size: 0.875rem;
+}

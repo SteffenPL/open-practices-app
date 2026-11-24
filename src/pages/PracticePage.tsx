@@ -5,18 +5,23 @@ import remarkGfm from 'remark-gfm'
 import { useAuth } from '../auth/useAuth'
 import {
   deletePractice,
+  getElements,
   getPractice,
   imageUrl,
   isSignificantUpdate,
 } from '../lib/practiceService'
 import { formatDate } from '../lib/markdown'
-import type { Practice } from '../lib/types'
+import type { Element, Practice } from '../lib/types'
+import type { Selection } from '../lib/visibility'
+import { ElementsReader } from '../components/ElementsReader'
 
 export function PracticePage() {
   const { id } = useParams<{ id: string }>()
   const { session } = useAuth()
   const navigate = useNavigate()
   const [practice, setPractice] = useState<Practice | null>(null)
+  const [elements, setElements] = useState<Element[]>([])
+  const [selection, setSelection] = useState<Selection>({})
   const [error, setError] = useState<string | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
@@ -27,6 +32,9 @@ export function PracticePage() {
       .catch((e) =>
         setError(e instanceof Error ? e.message : 'Failed to load practice'),
       )
+    getElements(id)
+      .then(setElements)
+      .catch(() => setElements([]))
   }, [id])
 
   if (error) {
@@ -71,6 +79,13 @@ export function PracticePage() {
         <div className="markdown-body">
           <Markdown remarkPlugins={[remarkGfm]}>{practice.body}</Markdown>
         </div>
+        <ElementsReader
+          elements={elements}
+          selection={selection}
+          onSelect={(elementId, optionId) =>
+            setSelection((prev) => ({ ...prev, [elementId]: optionId }))
+          }
+        />
         {isAuthor && (
           <div className="author-controls">
             <Link to={`/edit/${practice.id}`}>Edit</Link>
