@@ -14,6 +14,7 @@ import { formatDate } from '../lib/markdown'
 import type { Element, Practice } from '../lib/types'
 import type { Selection } from '../lib/visibility'
 import { ElementsReader } from '../components/ElementsReader'
+import { CompiledPanel } from '../components/CompiledPanel'
 
 export function PracticePage() {
   const { id } = useParams<{ id: string }>()
@@ -86,6 +87,9 @@ export function PracticePage() {
             setSelection((prev) => ({ ...prev, [elementId]: optionId }))
           }
         />
+        {elements.length > 0 && (
+          <CompiledPanel elements={elements} selection={selection} />
+        )}
         {isAuthor && (
           <div className="author-controls">
             <Link to={`/edit/${practice.id}`}>Edit</Link>
