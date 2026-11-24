@@ -15,6 +15,8 @@ import {
   type ElementDraft,
 } from '../lib/practiceService'
 import { ElementsEditor } from '../components/ElementsEditor'
+import { provisionTool } from '../lib/toolService'
+import type { Tool } from '../lib/types'
 
 export function EditorPage() {
   const { id } = useParams<{ id: string }>()
@@ -27,6 +29,7 @@ export function EditorPage() {
   const [body, setBody] = useState('')
   const [imagePath, setImagePath] = useState<string | null>(null)
   const [elements, setElements] = useState<ElementDraft[]>([])
+  const [toolsById, setToolsById] = useState<Record<string, Tool>>({})
   const [significant, setSignificant] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +49,16 @@ export function EditorPage() {
         setBody(practice.body)
         setImagePath(practice.image_path)
         getElements(practice.id)
-          .then((els) => setElements(toElementDrafts(els)))
+          .then((els) => {
+            setElements(toElementDrafts(els))
+            const tools: Record<string, Tool> = {}
+            for (const el of els) {
+              for (const option of el.options) {
+                if (option.tool) tools[option.tool.id] = option.tool
+              }
+            }
+            setToolsById(tools)
+          })
           .catch(() => setElements([]))
       })
       .catch((e) =>
@@ -65,6 +77,12 @@ export function EditorPage() {
         </div>
       </main>
     )
+  }
+
+  const linkTool = async (identifier: string): Promise<Tool> => {
+    const tool = await provisionTool(identifier)
+    setToolsById((prev) => ({ ...prev, [tool.id]: tool }))
+    return tool
   }
 
   const onImagePicked = async (file: File | undefined) => {
@@ -134,7 +152,12 @@ export function EditorPage() {
         <label>Description</label>
         <MDEditor value={body} onChange={(v) => setBody(v ?? '')} height={300} />
 
-        <ElementsEditor drafts={elements} onChange={setElements} />
+        <ElementsEditor
+          drafts={elements}
+          onChange={setElements}
+          toolsById={toolsById}
+          linkTool={linkTool}
+        />
 
         {isEditing && (
           <fieldset className="significance">

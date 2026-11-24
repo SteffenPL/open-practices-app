@@ -393,6 +393,32 @@ a.primary-as-link {
   gap: 0.4rem;
 }
 
+.option-editor .tool-linker {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.option-editor .tool-linker input {
+  flex: 1;
+}
+
+.tool-chip {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.option-card-tool {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #2563eb;
+}
+
 .visibility-rules {
   border-top: 1px dashed rgba(0, 0, 0, 0.12);
   padding-top: 0.5rem;

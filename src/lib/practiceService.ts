@@ -149,7 +149,7 @@ export async function getElements(practiceId: string): Promise<Element[]> {
   if (!supabase) return []
   const { data, error } = await supabase
     .from('elements')
-    .select('*, options(*)')
+    .select('*, options(*, tool:tools(*))')
     .eq('practice_id', practiceId)
     .order('position', { ascending: true })
   if (error) throw error

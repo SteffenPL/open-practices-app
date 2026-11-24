@@ -39,6 +39,12 @@ export function ElementsReader({ elements, selection, onSelect }: Props) {
                       {option.description}
                     </span>
                   )}
+                  {option.tool && (
+                    <span className="option-card-tool">
+                      📦 {option.tool.name}
+                      {option.tool.apm_id && <code>{option.tool.apm_id}</code>}
+                    </span>
+                  )}
                 </label>
               )
             })}

@@ -1,12 +1,16 @@
+import { useState } from 'react'
 import {
   emptyElementDraft,
   emptyOptionDraft,
   type ElementDraft,
 } from '../lib/practiceService'
+import type { Tool } from '../lib/types'
 
 interface Props {
   drafts: ElementDraft[]
   onChange: (drafts: ElementDraft[]) => void
+  toolsById: Record<string, Tool>
+  linkTool: (identifier: string) => Promise<Tool>
 }
 
 type VisibilityChoice = 'none' | 'require' | 'reject'
@@ -17,7 +21,7 @@ function choiceFor(draft: ElementDraft, optionId: string): VisibilityChoice {
   return 'none'
 }
 
-export function ElementsEditor({ drafts, onChange }: Props) {
+export function ElementsEditor({ drafts, onChange, toolsById, linkTool }: Props) {
   const update = (index: number, patch: Partial<ElementDraft>) => {
     onChange(drafts.map((d, i) => (i === index ? { ...d, ...patch } : d)))
   }
@@ -132,6 +136,25 @@ export function ElementsEditor({ drafts, onChange }: Props) {
                 >
                   Remove
                 </button>
+                <ToolLinker
+                  option={option}
+                  tool={option.tool_id ? toolsById[option.tool_id] : undefined}
+                  onLink={async (identifier) => {
+                    const tool = await linkTool(identifier)
+                    update(index, {
+                      options: draft.options.map((o, i) =>
+                        i === optionIndex ? { ...o, tool_id: tool.id } : o,
+                      ),
+                    })
+                  }}
+                  onUnlink={() =>
+                    update(index, {
+                      options: draft.options.map((o, i) =>
+                        i === optionIndex ? { ...o, tool_id: null } : o,
+                      ),
+                    })
+                  }
+                />
               </div>
             ))}
             <button
@@ -174,5 +197,59 @@ export function ElementsEditor({ drafts, onChange }: Props) {
         Add element
       </button>
     </div>
+  )
+}
+
+function ToolLinker({
+  option,
+  tool,
+  onLink,
+  onUnlink,
+}: {
+  option: { name: string }
+  tool: Tool | undefined
+  onLink: (identifier: string) => Promise<void>
+  onUnlink: () => void
+}) {
+  const [identifier, setIdentifier] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  if (tool) {
+    return (
+      <span className="tool-chip">
+        <strong>{tool.name}</strong>
+        {tool.apm_id && <code>{tool.apm_id}</code>}
+        <button className="link-like" onClick={onUnlink}>
+          unlink
+        </button>
+      </span>
+    )
+  }
+
+  return (
+    <span className="tool-linker">
+      <input
+        value={identifier}
+        onChange={(e) => setIdentifier(e.target.value)}
+        placeholder="APM id or owner/repo"
+        aria-label={`Tool identifier for ${option.name || 'option'}`}
+      />
+      <button
+        disabled={busy || !identifier.trim()}
+        onClick={() => {
+          setBusy(true)
+          setError(null)
+          onLink(identifier)
+            .catch((e) =>
+              setError(e instanceof Error ? e.message : 'Lookup failed'),
+            )
+            .finally(() => setBusy(false))
+        }}
+      >
+        {busy ? 'Linking…' : 'Link tool'}
+      </button>
+      {error && <span className="error">{error}</span>}
+    </span>
   )
 }
