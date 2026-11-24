@@ -44,4 +44,4 @@ create policy "authenticated users upload practice images"
 
 create policy "image uploaders can delete their uploads"
   on storage.objects for delete
-  using (bucket_id = 'practice-images' and owner = auth.uid()::text);
+  using (bucket_id = 'practice-images' and owner = auth.uid());
