@@ -12,8 +12,8 @@ function googleMetadata(user: {
   }
 }
 
-export function ProfileCard() {
-  const { session, signOut } = useAuth()
+export function ProfilePage() {
+  const { session } = useAuth()
   const user = session?.user
   const [profile, setProfile] = useState<Profile | null>(null)
   const [displayName, setDisplayName] = useState('')
@@ -52,8 +52,7 @@ export function ProfileCard() {
         {
           id: user.id,
           display_name: displayName,
-          avatar_url:
-            profile?.avatar_url ?? googleMetadata(user).avatarUrl,
+          avatar_url: profile?.avatar_url ?? googleMetadata(user).avatarUrl,
         },
         { onConflict: 'id' },
       )
@@ -70,10 +69,18 @@ export function ProfileCard() {
     setTimeout(() => setStatus('idle'), 2000)
   }
 
-  if (!user) return null
+  if (!user) {
+    return (
+      <main className="page">
+        <div className="card">
+          <h1>Not signed in</h1>
+        </div>
+      </main>
+    )
+  }
 
   return (
-    <main className="center-screen">
+    <main className="page">
       <div className="card">
         {avatarUrl && (
           <img
@@ -100,7 +107,6 @@ export function ProfileCard() {
         {status === 'error' && (
           <p className="muted">Couldn't save — check your connection.</p>
         )}
-        <button onClick={() => void signOut()}>Sign out</button>
       </div>
     </main>
   )

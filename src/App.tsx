@@ -1,22 +1,27 @@
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { isSupabaseConfigured } from './lib/supabase'
 import { AuthProvider } from './auth/AuthContext'
-import { useAuth } from './auth/useAuth'
 import { SetupNotice } from './components/SetupNotice'
-import { SignInPrompt } from './components/SignInPrompt'
-import { ProfileCard } from './components/ProfileCard'
+import { Header } from './components/Header'
+import { TimelinePage } from './pages/TimelinePage'
+import { PracticePage } from './pages/PracticePage'
+import { EditorPage } from './pages/EditorPage'
+import { ProfilePage } from './pages/ProfilePage'
 
-function AppShell() {
-  const { session, loading } = useAuth()
-
-  if (loading) {
-    return (
-      <main className="center-screen">
-        <p className="muted">Loading…</p>
-      </main>
-    )
-  }
-
-  return session ? <ProfileCard /> : <SignInPrompt />
+function Shell() {
+  return (
+    <>
+      <Header />
+      <Routes>
+        <Route path="/" element={<TimelinePage />} />
+        <Route path="/practice/:id" element={<PracticePage />} />
+        <Route path="/new" element={<EditorPage />} />
+        <Route path="/edit/:id" element={<EditorPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
+  )
 }
 
 export default function App() {
@@ -24,7 +29,9 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <AppShell />
+      <HashRouter>
+        <Shell />
+      </HashRouter>
     </AuthProvider>
   )
 }
