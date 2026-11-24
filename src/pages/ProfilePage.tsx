@@ -20,6 +20,7 @@ export function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle')
+  const [tokenCopied, setTokenCopied] = useState(false)
 
   useEffect(() => {
     if (!supabase || !user) return
@@ -69,6 +70,14 @@ export function ProfilePage() {
     setTimeout(() => setStatus('idle'), 2000)
   }
 
+  const copyAgentToken = async () => {
+    const token = session?.access_token
+    if (!token) return
+    await navigator.clipboard.writeText(token)
+    setTokenCopied(true)
+    setTimeout(() => setTokenCopied(false), 2000)
+  }
+
   if (!user) {
     return (
       <main className="page">
@@ -107,6 +116,11 @@ export function ProfilePage() {
         {status === 'error' && (
           <p className="muted">Couldn't save — check your connection.</p>
         )}
+        <hr />
+        <label>Agent access (expires after 1h)</label>
+        <button onClick={() => void copyAgentToken()}>
+          {tokenCopied ? 'Copied!' : 'Copy token for an AI agent'}
+        </button>
       </div>
     </main>
   )
