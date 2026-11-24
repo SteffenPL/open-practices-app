@@ -346,3 +346,7 @@ a.primary-as-link {
   display: flex;
   gap: 0.75rem;
 }
+
+.load-more {
+  align-self: center;
+}
