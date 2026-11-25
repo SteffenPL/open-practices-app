@@ -1,102 +1,55 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
 import { listPractices } from '../lib/practiceService'
-import { isSignificantUpdate } from '../lib/practiceService'
-import { imageUrl } from '../lib/practiceService'
-import { teaser, formatDate } from '../lib/markdown'
 import type { Practice } from '../lib/types'
+import { TimelineFeed } from './TimelineFeed'
+import { getPracticeSkillTags, type PracticeSkillTag } from '../lib/elementService'
 
 const PAGE_SIZE = 10
 
-export function TimelinePage() {
+export function TimelinePage({ searchQuery }: { searchQuery: string }) {
   const [practices, setPractices] = useState<Practice[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [more, setMore] = useState(false)
+  const [toolTags, setToolTags] = useState<Record<string, PracticeSkillTag[]>>({})
 
-  const load = async (from: number, replace: boolean) => {
+  const load = useCallback(async (from: number, replace: boolean) => {
+    if (replace) setLoading(true)
+    else setLoadingMore(true)
     try {
       const page = await listPractices(from, PAGE_SIZE)
-      setPractices((prev) => (replace ? page : [...prev, ...page]))
+      setPractices((previous) => (replace ? page : [...previous, ...page]))
       setMore(page.length === PAGE_SIZE)
       setError(null)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load timeline')
+      try {
+        const pageTags = await getPracticeSkillTags(page.map((practice) => practice.id))
+        setToolTags((previous) => replace ? pageTags : { ...previous, ...pageTags })
+      } catch {
+        // Skill labels are supplementary; a tag lookup should not block the feed.
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not load practices.')
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     void load(0, true)
-  }, [])
+  }, [load])
 
   return (
-    <main className="page">
-      <div className="timeline">
-        {loading && <p className="muted">Loading…</p>}
-        {error && <p className="error">{error}</p>}
-        {!loading && !error && practices.length === 0 && (
-          <div className="card">
-            <h1>Nothing here yet</h1>
-            <p className="muted">
-              Be the first to publish a Practice about your setup.
-            </p>
-            <Link className="primary-as-link" to="/new">
-              Write a practice
-            </Link>
-          </div>
-        )}
-        {practices.map((practice) => (
-          <Link
-            key={practice.id}
-            to={`/practice/${practice.id}`}
-            className="card practice-card"
-          >
-            {imageUrl(practice.image_path) && (
-              <img
-                className="practice-card-image"
-                src={imageUrl(practice.image_path) as string}
-                alt=""
-              />
-            )}
-            <div className="practice-card-body">
-              <h2>{practice.title}</h2>
-              <p className="teaser">{teaser(practice.body)}</p>
-              <p className="muted practice-card-meta">
-                {practice.author?.avatar_url && (
-                  <img
-                    className="avatar avatar-sm"
-                    src={practice.author.avatar_url}
-                    alt=""
-                  />
-                )}
-                <span>
-                  {practice.author?.display_name || 'Unknown'} ·{' '}
-                  {formatDate(
-                    isSignificantUpdate(practice)
-                      ? practice.last_significant_at
-                      : practice.published_at,
-                  )}
-                  {isSignificantUpdate(practice) && (
-                    <span className="updated-badge">updated</span>
-                  )}
-                </span>
-              </p>
-            </div>
-          </Link>
-        ))}
-        {more && (
-          <button
-            className="load-more"
-            onClick={() =>
-              void load(practices.length, false)
-            }
-          >
-            Load more
-          </button>
-        )}
-      </div>
-    </main>
+    <TimelineFeed
+      practices={practices}
+      toolTags={toolTags}
+      searchQuery={searchQuery}
+      loading={loading}
+      loadingMore={loadingMore}
+      error={error}
+      onLoadMore={() => void load(practices.length, false)}
+      hasMore={more}
+    />
   )
 }

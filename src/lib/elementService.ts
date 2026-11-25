@@ -51,6 +51,45 @@ export async function getElements(practiceId: string): Promise<Element[]> {
   return elements
 }
 
+export interface PracticeSkillTag {
+  name: string
+  packageId: string
+}
+
+/** List named options linked to APM tools for a batch of feed practices. */
+export async function getPracticeSkillTags(
+  practiceIds: string[],
+): Promise<Record<string, PracticeSkillTag[]>> {
+  if (!supabase || practiceIds.length === 0) return {}
+  const { data, error } = await supabase
+    .from('elements')
+    .select('practice_id, options(name, tool:tools(apm_id))')
+    .in('practice_id', practiceIds)
+  if (error) throw error
+
+  const tagsByPractice: Record<string, PracticeSkillTag[]> = {}
+  for (const element of (data ?? []) as Array<{
+    practice_id: string
+    options: Array<{
+      name: string
+      tool: { apm_id: string | null }[] | { apm_id: string | null } | null
+    }>
+  }>) {
+    for (const option of element.options ?? []) {
+      const tool = Array.isArray(option.tool) ? option.tool[0] : option.tool
+      const packageId = tool?.apm_id
+      const name = option.name.trim()
+      if (!packageId || !name) continue
+      const tags = tagsByPractice[element.practice_id] ?? []
+      if (!tags.some((tag) => tag.name.toLowerCase() === name.toLowerCase())) {
+        tags.push({ name, packageId })
+        tagsByPractice[element.practice_id] = tags
+      }
+    }
+  }
+  return tagsByPractice
+}
+
 export function toElementDrafts(elements: Element[]): ElementDraft[] {
   return elements.map((element) => ({
     id: element.id,
