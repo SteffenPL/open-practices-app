@@ -23,3 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 supabase/.temp/
+
+# APM dependencies
+apm_modules/
+
+# Agent skills are installed from apm.yml and apm.lock.yaml.
+.agents/
+.claude/
+.github/copilot/
