@@ -4,6 +4,7 @@ import { updatePractice } from '../lib/practiceService'
 import { saveElements } from '../lib/elementService'
 import { provisionDrafts, sourceDisplayUrl, toFetchableSourceUrl } from '../lib/importService'
 import { parseDefinition, type PracticeDefinition } from '../lib/practiceDefinition'
+import { describeSaveError } from '../lib/saveError'
 import type { Practice } from '../lib/types'
 
 /**
@@ -54,7 +55,8 @@ export function SyncButton({ practice }: { practice: Practice }) {
       await saveElements(practice.id, drafts)
       navigate(0) // reload the practice page
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Sync failed.')
+      console.error('Sync failed:', e)
+      setError(describeSaveError(e))
       setSyncing(false)
     }
   }

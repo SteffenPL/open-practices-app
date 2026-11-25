@@ -20,6 +20,7 @@ import {
 import { ElementsEditor } from '../components/ElementsEditor'
 import { ImportForm } from '../components/ImportForm'
 import { provisionTool } from '../lib/toolService'
+import { describeSaveError } from '../lib/saveError'
 import type { Tool } from '../lib/types'
 
 export function EditorPage() {
@@ -99,7 +100,8 @@ export function EditorPage() {
       setImagePath(path)
       if (previous) await deletePracticeImage(previous)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Image upload failed')
+      console.error('Image upload failed:', e)
+      setError(describeSaveError(e))
     }
   }
 
@@ -127,7 +129,8 @@ export function EditorPage() {
         navigate(`/practice/${practice.id}`)
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Saving failed')
+      console.error('Saving failed:', e)
+      setError(describeSaveError(e))
       setSaving(false)
     }
   }

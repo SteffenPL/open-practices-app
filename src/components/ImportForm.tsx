@@ -5,6 +5,7 @@ import {
   createPractice,
 } from '../lib/practiceService'
 import { saveElements } from '../lib/elementService'
+import { describeSaveError } from '../lib/saveError'
 import {
   DEFAULT_PATH,
   fetchDefinition,
@@ -62,7 +63,8 @@ export function ImportForm() {
       await saveElements(practice.id, drafts)
       navigate(`/practice/${practice.id}`)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Publishing failed.')
+      console.error('Publishing failed:', e)
+      setError(describeSaveError(e))
       setPublishing(false)
     }
   }
