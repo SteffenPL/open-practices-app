@@ -29,6 +29,20 @@ describe('describeSaveError', () => {
     )
   })
 
+  it('includes code and hint on Error subclasses that carry them', () => {
+    const error = new Error('Bucket not found')
+    Object.assign(error, { code: '404', hint: 'Create the bucket first' })
+    expect(describeSaveError(error)).toBe(
+      'Bucket not found (code 404, hint: Create the bucket first)',
+    )
+  })
+
+  it('includes a numeric statusCode for storage errors', () => {
+    const error = new Error('Bucket not found')
+    Object.assign(error, { statusCode: 404 })
+    expect(describeSaveError(error)).toBe('Bucket not found (status 404)')
+  })
+
   it('renders a readable fallback for non-error values', () => {
     expect(describeSaveError(undefined)).toBe('Unknown error')
     expect(describeSaveError('boom')).toBe('boom')

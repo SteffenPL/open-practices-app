@@ -17,11 +17,21 @@ const migrationDir = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   '../supabase/migrations',
 )
-const expected = new Set()
+const expectedTables = new Set()
+const expectedColumns = new Map() // table -> Set(column)
 for (const file of readdirSync(migrationDir).sort()) {
   const sql = readFileSync(path.join(migrationDir, file), 'utf8')
-  for (const match of sql.matchAll(/create table (?:if not exists )?public\.(\w+)/g)) {
-    expected.add(match[1])
+  for (const match of sql.matchAll(
+    /create table (?:if not exists )?public\.(\w+)/g,
+  )) {
+    expectedTables.add(match[1])
+  }
+  for (const match of sql.matchAll(
+    /alter table public\.(\w+) add column (?:if not exists )?(\w+)/g,
+  )) {
+    const columns = expectedColumns.get(match[1]) ?? new Set()
+    columns.add(match[2])
+    expectedColumns.set(match[1], columns)
   }
 }
 
@@ -35,7 +45,7 @@ const res = await fetch(
     },
     body: JSON.stringify({
       query:
-        "select table_name from information_schema.tables where table_schema = 'public'",
+        "select table_name, column_name from information_schema.columns where table_schema = 'public'",
     }),
   },
 )
@@ -43,14 +53,40 @@ if (!res.ok) {
   console.error(`Schema check failed: HTTP ${res.status}`)
   process.exit(1)
 }
-const existing = new Set(
-  (await res.json()).map((row) => row.table_name),
-)
+const existingTables = new Set()
+const existingColumns = new Map() // table -> Set(column)
+for (const row of await res.json()) {
+  existingTables.add(row.table_name)
+  const columns = existingColumns.get(row.table_name) ?? new Set()
+  columns.add(row.column_name)
+  existingColumns.set(row.table_name, columns)
+}
 
-const missing = [...expected].filter((table) => !existing.has(table))
-if (missing.length > 0) {
-  console.error(`Missing tables on project ${ref}: ${missing.join(', ')}`)
+const missingTables = [...expectedTables].filter(
+  (table) => !existingTables.has(table),
+)
+const missingColumns = [...expectedColumns].flatMap(([table, columns]) =>
+  [...columns]
+    .filter(
+      (column) => !existingColumns.get(table)?.has(column),
+    )
+    .map((column) => `${table}.${column}`),
+)
+if (missingTables.length > 0 || missingColumns.length > 0) {
+  if (missingTables.length > 0) {
+    console.error(`Missing tables on project ${ref}: ${missingTables.join(', ')}`)
+  }
+  if (missingColumns.length > 0) {
+    console.error(`Missing columns on project ${ref}: ${missingColumns.join(', ')}`)
+  }
   console.error('Apply migrations from supabase/migrations to the live project.')
   process.exit(1)
 }
-console.log(`Schema OK: ${expected.size} expected tables present on ${ref}.`)
+const expectedColumnCount = [...expectedColumns.values()].reduce(
+  (n, columns) => n + columns.size,
+  0,
+)
+console.log(
+  `Schema OK: ${expectedTables.size} expected tables and ${expectedColumnCount} ` +
+    `expected columns present on ${ref}.`,
+)
