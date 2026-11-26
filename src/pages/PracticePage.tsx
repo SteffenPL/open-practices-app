@@ -18,6 +18,7 @@ import { ElementsReader } from '../components/ElementsReader'
 import { CompiledPanel } from '../components/CompiledPanel'
 import { CommentsSection } from '../components/CommentsSection'
 import { SyncButton } from '../components/SyncButton'
+import { splitGuidedPracticeBody } from './guidedPracticeContent'
 
 export function PracticePage() {
   const { id } = useParams<{ id: string }>()
@@ -63,6 +64,7 @@ export function PracticePage() {
 
   const isAuthor = session?.user?.id === practice.author_id
   const image = imageUrl(practice.image_path)
+  const bodyParts = splitGuidedPracticeBody(practice.body)
 
   const onDelete = async () => {
     await deletePractice(practice)
@@ -98,18 +100,22 @@ export function PracticePage() {
         </p>
         {image && <img className="practice-image" src={image} alt="" />}
         <div className="markdown-body">
-          <Markdown remarkPlugins={[remarkGfm]}>{practice.body}</Markdown>
+          <Markdown remarkPlugins={[remarkGfm]}>{bodyParts.opening}</Markdown>
         </div>
         <ElementsReader
           elements={elements}
           selection={selection}
+          guidedPractice={bodyParts.guided}
           onSelect={(elementId, optionId) =>
             setSelection((prev) => ({ ...prev, [elementId]: optionId }))
           }
         />
         {elements.length > 0 && (
-          <CompiledPanel elements={elements} selection={selection} />
+          <CompiledPanel elements={elements} selection={selection} guidedPractice={bodyParts.guided} />
         )}
+        {bodyParts.closing && <div className="markdown-body practice-closing">
+          <Markdown remarkPlugins={[remarkGfm]}>{bodyParts.closing}</Markdown>
+        </div>}
         <CommentsSection
           practiceId={practice.id}
           practiceAuthorId={practice.author_id}

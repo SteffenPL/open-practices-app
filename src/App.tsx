@@ -8,6 +8,7 @@ import { TimelinePage } from './pages/TimelinePage'
 import { PracticePage } from './pages/PracticePage'
 import { EditorPage } from './pages/EditorPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { GuidedPracticeEditor } from './pages/GuidedPracticeEditor'
 
 function Shell() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -41,7 +42,7 @@ function Shell() {
       <Routes>
         <Route path="/" element={<TimelinePage searchQuery={searchQuery} />} />
         <Route path="/practice/:id" element={<PracticePage />} />
-        <Route path="/new" element={<EditorPage />} />
+        <Route path="/new" element={<GuidedPracticeEditor />} />
         <Route path="/edit/:id" element={<EditorPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

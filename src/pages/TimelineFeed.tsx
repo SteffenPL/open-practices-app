@@ -4,6 +4,7 @@ import { formatDate, teaser } from '../lib/markdown'
 import { imageUrl, isSignificantUpdate } from '../lib/practiceService'
 import type { PracticeSkillTag } from '../lib/elementService'
 import type { Practice } from '../lib/types'
+import { splitGuidedPracticeBody } from './guidedPracticeContent'
 import './timeline.css'
 
 type Props = {
@@ -35,6 +36,7 @@ function PracticePost({
   const image = imageUrl(practice.image_path)
   const date = isSignificantUpdate(practice) ? practice.last_significant_at : practice.published_at
   const authorName = practice.author?.display_name || 'Open Practices'
+  const bodyParts = splitGuidedPracticeBody(practice.body)
 
   return <article className="timeline-post">
     <div className="timeline-post-lead">
@@ -46,7 +48,7 @@ function PracticePost({
       <Link to={`/practice/${practice.id}`} className="timeline-post-title"><h2>{practice.title}</h2></Link>
     </div>
     <div className="timeline-post-content">
-      <p>{teaser(practice.body, 220)}</p>
+      <p>{teaser(bodyParts.opening, 220)}</p>
       {image && <Link to={`/practice/${practice.id}`} className="timeline-post-image-link" tabIndex={-1} aria-hidden="true"><img className="timeline-post-image" src={image} alt="" loading="lazy" /></Link>}
       <div className="timeline-post-foot">
         {tags.length > 0 && <div className="timeline-post-tags" aria-label="Skills and packages linked to this practice">
@@ -68,7 +70,8 @@ export function TimelineFeed({ practices, toolTags, searchQuery, loading, loadin
   const query = searchQuery.trim().toLowerCase()
   const visibleItems = practices.filter((practice) => {
     const matchesTopic = selectedTopic === 'all' || tagsFor(practice).some((tag) => tag.name.toLowerCase() === selectedTopic)
-    const searchText = [practice.title, practice.body, practice.author?.display_name ?? '', ...tagsFor(practice).map((tag) => tag.name)].join(' ').toLowerCase()
+    const bodyParts = splitGuidedPracticeBody(practice.body)
+    const searchText = [practice.title, bodyParts.opening, bodyParts.closing, practice.author?.display_name ?? '', ...tagsFor(practice).map((tag) => tag.name)].join(' ').toLowerCase()
     return matchesTopic && (!query || searchText.includes(query))
   })
 

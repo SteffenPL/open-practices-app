@@ -144,6 +144,15 @@ body { min-width: 320px; min-height: 100vh; margin: 0; }
 .visibility-rule { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-weight: 400; }
 .option-card input[type='radio'] { accent-color: var(--app-accent); }
 .option-card.selected { background: color-mix(in srgb, var(--app-surface), var(--app-accent) 7%); }
+.practice-option-tabs { min-width: 0; }
+.practice-option-tab-list { display: flex; gap: .2rem; overflow-x: auto; border-bottom: 1px solid var(--app-rule); }
+.app-shell .practice-option-tab-list button { min-height: 2.5rem; flex: none; padding: .45rem .75rem; border: 0; border-bottom: 2px solid transparent; border-radius: 0; color: var(--app-muted); background: transparent; white-space: nowrap; }
+.app-shell .practice-option-tab-list button.is-active { border-bottom-color: var(--app-accent); color: var(--app-ink); font-weight: 700; }
+.practice-option-tab-panel { min-height: 6rem; padding: .8rem .1rem; }
+.practice-option-tool { margin-bottom: .4rem !important; color: var(--app-muted); font-size: .78rem; font-weight: 650; }
+.practice-option-command { overflow-x: auto; margin: 0 0 .65rem; padding: .7rem .8rem; border: 1px solid var(--app-rule); border-radius: 8px; background: color-mix(in srgb, var(--app-paper), var(--app-ink) 3%); white-space: pre-wrap; overflow-wrap: anywhere; }
+.practice-option-command code { padding: 0; background: transparent; }
+.practice-closing { padding-top: .85rem; border-top: 1px solid var(--app-rule); }
 .app-shell .w-md-editor { --color-canvas-default: var(--app-surface); --color-canvas-subtle: var(--app-paper); --color-fg-default: var(--app-ink); --color-border-default: var(--app-rule); --color-neutral-muted: var(--app-muted); color: var(--app-ink); border-color: var(--app-rule); }
 .app-shell .w-md-editor-text-pre, .app-shell .w-md-editor-text-input, .app-shell .w-md-editor-text { color: var(--app-ink) !important; }
 @media (max-width: 760px) {
