@@ -1,0 +1,24 @@
+#!/bin/bash
+set -euo pipefail
+cd /srv/open-practices
+if [[ ! -d source/.git ]]; then
+  git clone --depth 1 --branch main https://github.com/SteffenPL/open-practices-app.git source
+else
+  git -C source fetch --depth 1 origin main
+  git -C source checkout -q --detach FETCH_HEAD
+fi
+revision=$(git -C source rev-parse HEAD)
+if [[ -f www/open-practices/.revision ]] && [[ $(cat www/open-practices/.revision) == "$revision" ]]; then
+  exit 0
+fi
+cd source
+npm ci --no-audit --no-fund
+npm test
+npm run build -- --base=/open-practices/
+release=$(mktemp -d /srv/open-practices/releases/site.XXXXXXXX)
+cp -R dist/. "$release/"
+printf '%s\n' "$revision" > "$release/.revision"
+chmod -R a+rX "$release"
+cd /srv/open-practices/www
+ln -sfn "$release" .next-link
+mv -Tf .next-link open-practices

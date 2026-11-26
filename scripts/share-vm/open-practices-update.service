@@ -1,0 +1,16 @@
+[Unit]
+Description=Build Open Practices when GitHub main changes
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=open-practices
+Group=open-practices
+Environment=HOME=/srv/open-practices
+Environment=PATH=/opt/open-practices-node/bin:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=/etc/open-practices.env
+ExecStart=/usr/local/lib/open-practices/update
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/srv/open-practices
+PrivateTmp=true

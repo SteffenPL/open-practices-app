@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch GitHub main for Open Practices releases
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=2min
+
+[Install]
+WantedBy=timers.target

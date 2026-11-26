@@ -1,0 +1,13 @@
+[Unit]
+Description=Serve Open Practices to the authenticated reverse proxy
+After=network.target
+
+[Service]
+DynamicUser=true
+ExecStart=/bin/busybox httpd -f -p 127.0.0.1:3108 -h /srv/open-practices/www
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

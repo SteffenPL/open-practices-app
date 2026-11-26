@@ -6,7 +6,7 @@ See the parent repository's `GLOSSARY.md` for the domain vocabulary
 (Practice, Element, Option, Tool, Compiled Practice).
 
 Stack: React SPA (Vite + TypeScript), Supabase (auth, database, storage),
-deployed as static files to GitHub Pages.
+served from [the share VM](https://steffenpl-share.exe.xyz/open-practices/) behind its sign-in gate.
 
 ## Local development
 
@@ -29,13 +29,16 @@ npm run dev
      the redirect URL shown by Supabase (ends with
      `/auth/v1/callback`).
    - Add your site URLs (local: `http://localhost:5173`, production:
-     `https://<user>.github.io/open-practices-app/`) to the Supabase
+     `https://steffenpl-share.exe.xyz/open-practices/`) to the Supabase
      Authentication → URL configuration as allowed redirect URLs.
-4. **Repository secrets** for the GitHub Pages workflow:
-   `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (from Project Settings →
-   API).
-5. Push to `main` — the deploy workflow publishes to GitHub Pages. Ensure
-   Settings → Pages → Source is set to *GitHub Actions*.
+4. **Deployment** uses the systemd units and updater in `scripts/share-vm/`.
+   The share VM checks GitHub `main` every two minutes. For each new revision
+   it installs dependencies, runs tests and builds with Node 24. A successful
+   build replaces the static release behind `127.0.0.1:3108/open-practices/`.
+   The previous release keeps serving if tests or compilation fail. The VM's
+   reverse proxy handles access control. GitHub Pages redirects old bookmarks.
+   Only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` belong in the VM's
+   `/etc/open-practices.env`.
 
 ## Project layout
 
