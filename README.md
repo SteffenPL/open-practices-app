@@ -2,8 +2,7 @@
 
 The web app for [Open Practices](https://github.com/SteffenPL/open-practices) —
 a community platform where people publish their (mostly AI) working practices.
-See the parent repository's `GLOSSARY.md` for the domain vocabulary
-(Practice, Element, Option, Tool, Compiled Practice).
+See the [glossary](./GLOSSARY.md) for Practice, Tool, Tool Mention, and Install List.
 
 Stack: React SPA (Vite + TypeScript), Supabase (auth, database, storage),
 served from [the share VM](https://steffenpl-share.exe.xyz/open-practices/) behind its sign-in gate.
@@ -19,9 +18,7 @@ npm run dev
 ## One-time setup (human steps)
 
 1. **Create a Supabase project** at supabase.com.
-2. **Run the migration**: open the SQL editor in the Supabase dashboard and
-   execute `supabase/migrations/0001_profiles.sql` (creates the `profiles`
-   table, RLS policies, and the auto-provision trigger).
+2. Apply the SQL migrations in `supabase/migrations` in version order to the selected project.
 3. **Enable Google sign-in**:
    - In the Supabase dashboard, under Authentication → Providers, enable
      Google. It needs a Google Cloud OAuth client ID and secret.
@@ -59,15 +56,15 @@ agent the user's full powers for that window (see
 [ADR 0001](https://github.com/SteffenPL/open-practices/blob/main/docs/adr/0001-agent-access-via-session-grants.md)).
 
 **The three calls** (base URL:
-`https://ynehkcayahsquszsfcdb.supabase.co/functions/v1/agent`,
+`https://fpivzqmhksvaywxlektw.supabase.co/functions/v1/agent`,
 header `Authorization: Bearer <token>`):
 
 ```sh
 # Create a practice from a definition
 curl -X POST "$BASE/practices" \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"definition": "---\ntitle: My setup\n---\n\nProse…\n\n## Element: Which skill?\n\n| Option | Why/when | Tool |\n| --- | --- | --- |\n| a | because | mattpocock/skills |\n| b | otherwise | |\n"}'
-# -> { "id": "…", "url": "https://steffenpl.github.io/open-practices-app/#/practice/…" }
+  -d '{"definition": "---\ntitle: Review a change locally\n---\n\nUse a separate working directory to compare the proposed change with the original."}'
+# -> { "id": "…", "url": "https://steffenpl-share.exe.xyz/open-practices/#/practice/…" }
 
 # Read a practice back as a definition
 curl "$BASE/practices/<id>" -H "Authorization: Bearer $TOKEN"
