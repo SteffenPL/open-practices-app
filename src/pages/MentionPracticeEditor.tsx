@@ -16,6 +16,8 @@ import { describeSaveError } from '../lib/saveError'
 import type { Element, Practice } from '../lib/types'
 import { GUIDED_CLOSING_MARKER } from './guidedPracticeContent'
 
+import './writing-canvas.css'
+
 type Setup = { command: string; notes: string }
 type Anchor = { start: number; end: number; query: string }
 
@@ -57,6 +59,7 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
   const [anchor, setAnchor] = useState<Anchor | null>(null)
   const [createAnchor, setCreateAnchor] = useState<Anchor | null>(null)
   const [highlight, setHighlight] = useState(-1)
+  const [suggestionTop, setSuggestionTop] = useState<number>()
 
   useEffect(() => {
     let active = true
@@ -110,7 +113,24 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
   const canSave = ready && !saving && !uploading && !createAnchor
 
   function showCompletions(value: string, caret: number) {
-    setAnchor(activePracticeMention(value, caret))
+    const active = activePracticeMention(value, caret)
+    setAnchor(active)
+    const field = input.current
+    if (active && field) {
+      const mirror = document.createElement('div')
+      const style = getComputedStyle(field)
+      Object.assign(mirror.style, { position: 'fixed', visibility: 'hidden', pointerEvents: 'none',
+        boxSizing: 'border-box', width: field.clientWidth + 'px', whiteSpace: 'pre-wrap',
+        overflowWrap: 'break-word', font: style.font, lineHeight: style.lineHeight,
+        letterSpacing: style.letterSpacing, padding: style.padding })
+      mirror.textContent = value.slice(0, caret)
+      const marker = document.createElement('span')
+      marker.textContent = '\u200b'
+      mirror.append(marker)
+      document.body.append(mirror)
+      setSuggestionTop(Math.min(field.clientHeight, Math.max(0, marker.offsetTop + parseFloat(style.lineHeight) - field.scrollTop)))
+      mirror.remove()
+    }
     setHighlight(-1)
   }
   function insertTool(tool: CatalogTool, at: Anchor) {
@@ -155,24 +175,24 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
     finally { locked.current = false; setSaving(false) }
   }
 
-  return <main className="page"><div className="card mention-composer">
-    <h1>{id ? 'Edit practice' : 'New practice'}</h1>
+  return <main className="page writing-page"><div className="mention-composer writing-canvas">
+    <header className="writing-heading"><Link to={id ? '/practice/'+id : '/'} aria-label="Back">←</Link><h1>{id ? 'Edit practice' : 'New practice'}</h1></header>
     {error && <p role="alert" className="error">{error}</p>}
     {!ready && !error && <p role="status">Loading…</p>}
     {ready && <form onSubmit={save}>
       <fieldset disabled={saving || Boolean(createAnchor)}>
-        <label htmlFor="practice-title">Title</label>
-        <input id="practice-title" required maxLength={500} value={title} onChange={event => setTitle(event.target.value)} />
-        <label htmlFor="practice-body">Key message</label>
+        <section className="writing-sheet"><label className="writing-label" htmlFor="practice-title">Title</label>
+        <textarea id="practice-title" rows={1} placeholder="Give your practice a title" onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); input.current?.focus() } }} required maxLength={500} value={title} onChange={event => setTitle(event.target.value.replace(/[\r\n]+/g, ' '))} />
+        <label className="writing-label" htmlFor="practice-body">Key message</label>
         <div className="mention-input-wrap" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setAnchor(null) }}>
-          <textarea id="practice-body" ref={input} rows={6} required maxLength={150000} value={body}
+          <textarea id="practice-body" ref={input} rows={3} placeholder="What do you do, and how does it help?" required maxLength={150000} value={body}
             aria-describedby="mention-help" aria-autocomplete="list" aria-controls={anchor ? 'mention-choices' : undefined}
             aria-activedescendant={anchor && highlight >= 0 ? 'mention-choice-'+highlight : undefined}
             onChange={event => {setBody(event.target.value); showCompletions(event.target.value, event.target.selectionStart)}}
             onClick={event => showCompletions(body, event.currentTarget.selectionStart)}
             onKeyUp={event => {if (['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) showCompletions(body, event.currentTarget.selectionStart)}}
             onKeyDown={keyDown} />
-          {anchor && optionsCount > 0 && <div className="mention-menu" id="mention-choices" role="listbox" aria-label="Tool suggestions">
+          {anchor && optionsCount > 0 && <div className="mention-menu" id="mention-choices" role="listbox" style={{ top: suggestionTop }} aria-label="Tool suggestions">
             {matches.map((tool, index) => <button key={tool.id} type="button" role="option" id={'mention-choice-'+index}
               aria-selected={index === highlight} onMouseDown={event => event.preventDefault()} onClick={() => choose(index)}>
               <strong>{tool.name}</strong> <span>#{tool.slug}</span>
@@ -183,9 +203,9 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
             </button>}
           </div>}
         </div>
-        <p id="mention-help" className="muted">Type # to mention a tool. Use backticks for code and double quotes for prompts.</p>
+        <p id="mention-help" className="muted">Mention a tool with <kbd>#</kbd> · Use <code>`code`</code> or “quoted prompts”</p></section>
         {distinctPracticeTools(mentions).map(mention => <details key={mention.tool_id} className="composer-setup">
-          <summary>{mention.tool.name} · optional setup</summary>
+          <summary><span className="writing-tool-name"><b aria-hidden="true">#</b> {mention.tool.name}</span><small>Optional setup</small></summary>
           <label htmlFor={'command-'+mention.tool_id}>Install command</label>
           <textarea id={'command-'+mention.tool_id} rows={2} maxLength={8000} value={mention.install_command ?? ''} onChange={event => changeSetup(mention.tool_id,'command',event.target.value)} />
           {mention.tool.install_command && mention.install_command !== mention.tool.install_command && <div className="catalog-command-choice">
@@ -199,7 +219,7 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
           <h2>{title}</h2><p><PracticeText text={body} mentions={mentions} /></p>
           <InstallList mentions={mentions} title={title} />
         </details>}
-        <details><summary>Image</summary>
+        <details className="writing-attachment"><summary>{image ? 'Attached image' : 'Add an image'}</summary>
           {image && <><img className="practice-image" src={imageUrl(image) ?? ''} alt="Practice attachment" /><button type="button" onClick={() => setImage(null)}>Remove image</button></>}
           <input aria-label="Upload an image" type="file" accept="image/*" disabled={uploading} onChange={async event => {
             const file = event.target.files?.[0]
@@ -212,10 +232,10 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
         {original?.source_url && <a href={original.source_url} target="_blank" rel="noreferrer">Original source</a>}
         <LegacyPracticeNotes elements={legacy} />
         {id && <label><input type="checkbox" checked={significant} onChange={event => setSignificant(event.target.checked)} /> Show this update in the timeline</label>}
-        <div className="composer-actions"><button type="submit" disabled={!canSave}>{saving ? 'Saving…' : id ? 'Save changes' : 'Publish practice'}</button><Link to={id ? '/practice/'+id : '/'}>Cancel</Link></div>
+        <div className="composer-actions"><button className="primary" type="submit" disabled={!canSave}>{saving ? 'Saving…' : id ? 'Save changes' : 'Publish practice'}</button><Link to={id ? '/practice/'+id : '/'}>Cancel</Link></div>
       </fieldset>
     </form>}
     {createAnchor && <section aria-label="Create a mentioned tool"><ToolEditor initialName={createAnchor.query} onSaved={tool => insertTool(tool,createAnchor)} onCancel={() => setCreateAnchor(null)} /></section>}
-    {ready && !id && !createAnchor && <details><summary>Import a practice</summary><ImportForm /></details>}
+    {ready && !id && !createAnchor && <details className="writing-import"><summary>Import a practice</summary><ImportForm /></details>}
   </div></main>
 }
