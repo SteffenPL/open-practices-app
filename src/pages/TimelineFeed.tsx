@@ -73,16 +73,21 @@ export function TimelineFeed({ practices, tools, mentions, searchQuery, loading,
 
   return <main className="timeline-page">
     <div className="timeline-shell">
-      <nav className="practice-compose-nav" aria-label="Create and browse">
-        <Link className="practice-compose-primary" to="/new">New practice</Link>
-        <Link to="/tools/new">New tool</Link>
-        <Link to="/tools">Tools</Link>
-      </nav>
+      <header className="feed-heading">
+        <div className="feed-views">
+          <h1>Practices</h1>
+          <Link to="/tools">Tools</Link>
+        </div>
+        <nav className="practice-compose-nav" aria-label="Create">
+          <Link to="/tools/new">New tool</Link>
+          <Link className="practice-compose-primary" to="/new">New practice</Link>
+        </nav>
+      </header>
       <div className="timeline-layout">
         <section className="timeline-feed" aria-label="Practices">
           {loading && practices.length === 0 && <p className="timeline-state">Loading practices…</p>}
           {error && <p className="timeline-error" role="alert">{error}</p>}
-          {!loading && !error && practices.length === 0 && <div className="timeline-empty"><h1>Nothing here yet</h1><p>Be the first to share a practice.</p><Link to="/new">Share a practice</Link></div>}
+          {!loading && !error && practices.length === 0 && <div className="timeline-empty"><h2>Nothing here yet</h2><p>Be the first to share a practice.</p><Link to="/new">Share a practice</Link></div>}
           {!loading && practices.length > 0 && visibleItems.map((practice) => <PracticePost key={practice.id} practice={practice} tools={toolsFor(practice)} mentions={mentions[practice.id] ?? []} />)}
           {!loading && practices.length > 0 && visibleItems.length === 0 && <p className="timeline-state">No matching practices. Try another search or topic.</p>}
           {hasMore && <button className="timeline-load-more" onClick={onLoadMore} disabled={loadingMore}>{loadingMore ? 'Loading…' : 'Load more practices'}</button>}
@@ -90,8 +95,8 @@ export function TimelineFeed({ practices, tools, mentions, searchQuery, loading,
         <aside className="timeline-topic-sidebar">
           <p className="timeline-sidebar-label">Mentioned tools</p>
           <nav aria-label="Filter by tool">
-            <button className={`timeline-topic-option${selectedTopic === 'all' ? ' is-active' : ''}`} onClick={() => setSelectedTopic('all')}><b>All practices</b><span>{practices.length}</span></button>
-            {topics.map((topic, index) => <button key={topic.id} className={`timeline-topic-option${selectedTopic === topic.id ? ' is-active' : ''}`} onClick={() => setSelectedTopic(topic.id)}><i className={`timeline-topic-swatch timeline-topic-swatch-${index % 4}`} /><b>#{topic.slug}</b><span>{practices.filter((practice) => toolsFor(practice).some(tool => tool.id === topic.id)).length}</span></button>)}
+            <button className={`timeline-topic-option${selectedTopic === 'all' ? ' is-active' : ''}`} aria-pressed={selectedTopic === 'all'} onClick={() => setSelectedTopic('all')}><b>All practices</b><span>{practices.length}</span></button>
+            {topics.map((topic, index) => <button key={topic.id} className={`timeline-topic-option${selectedTopic === topic.id ? ' is-active' : ''}`} aria-pressed={selectedTopic === topic.id} onClick={() => setSelectedTopic(topic.id)}><i className={`timeline-topic-swatch timeline-topic-swatch-${index % 4}`} /><b>#{topic.slug}</b><span>{practices.filter((practice) => toolsFor(practice).some(tool => tool.id === topic.id)).length}</span></button>)}
           </nav>
         </aside>
       </div>

@@ -87,7 +87,8 @@ export function PracticePage() {
 
   return (
     <main className="page">
-      <article className="card practice-detail">
+      <article className="practice-detail">
+        <Link className="practice-back" to="/">← Practices</Link>
         <h1>{practice.title}</h1>
         {practice.mention_format
           ? <p className="practice-key-message"><PracticeText text={practice.body} mentions={mentions} /></p>
