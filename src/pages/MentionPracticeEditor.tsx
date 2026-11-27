@@ -149,7 +149,7 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
     else if (anchor.query.trim()) { setCreateAnchor(anchor); setAnchor(null) }
   }
   function keyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (!anchor || !optionsCount) return
+    if (event.nativeEvent.isComposing || !anchor || !optionsCount) return
     if (event.key === 'Escape') { event.preventDefault(); setAnchor(null); return }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
@@ -182,7 +182,7 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
     {ready && <form onSubmit={save}>
       <fieldset disabled={saving || Boolean(createAnchor)}>
         <section className="writing-sheet"><label className="writing-label" htmlFor="practice-title">Title</label>
-        <textarea id="practice-title" rows={1} placeholder="Give your practice a title" onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); input.current?.focus() } }} required maxLength={500} value={title} onChange={event => setTitle(event.target.value.replace(/[\r\n]+/g, ' '))} />
+        <textarea id="practice-title" rows={1} placeholder="Give your practice a title" onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); input.current?.focus() } }} required maxLength={500} value={title} onChange={event => setTitle(event.target.value.replace(/[\r\n]+/g, ' '))} />
         <label className="writing-label" htmlFor="practice-body">Key message</label>
         <div className="mention-input-wrap" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setAnchor(null) }}>
           <textarea id="practice-body" ref={input} rows={3} placeholder="What do you do, and how does it help?" required maxLength={150000} value={body}
