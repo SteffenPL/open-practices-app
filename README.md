@@ -7,6 +7,16 @@ See the [glossary](./GLOSSARY.md) for Practice, Tool, Tool Mention, and Install 
 Stack: React SPA (Vite + TypeScript), Supabase (auth, database, storage),
 served from [the share VM](https://steffenpl-share.exe.xyz/open-practices/) behind its sign-in gate.
 
+## Writing a practice
+
+Choose **New practice** and write a title and key message. For example:
+
+> I use #pdf to extract the text, then ask “Which dates need checking?” and compare the result with `dates.txt`.
+
+Select a tool from the suggestions after typing `#`, or create it there. Add an install command or a setup note only if it helps the reader. Text between backticks is code. Text between paired double quotes is a prompt.
+
+Choose **New tool** to contribute a catalog entry directly. A tool can have an APM package identifier, a source link, a project website, and a suggested install command. The tool page shows its edit history. Renaming a tool or editing its suggested command preserves what authors wrote in published practices.
+
 ## Local development
 
 ```sh
