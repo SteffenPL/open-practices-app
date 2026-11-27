@@ -12,6 +12,7 @@
 import { normalizeToolIdentifier } from '../../../src/lib/toolIdentifier.ts'
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import {
+  legacyAlternativeNotes,
   parseDefinition,
   renderDefinition,
   type PracticeDefinition,
@@ -234,6 +235,13 @@ Deno.serve(async (req) => {
             installCommand: (setup?.install_command as string | null) ?? null, notes: (setup?.notes as string | null) ?? null }
         }),
         legacyNotes: practice.mention_format ? '' : undefined,
+      }
+      // Editing a historical practice keeps its old alternative records as readable notes.
+      if (practice.mention_format && definition.elements.length) {
+        const notes = legacyAlternativeNotes(definition.elements)
+        if (notes && !definition.body.includes(notes)) {
+          definition.body += '\n\n## Alternatives\n\n' + notes
+        }
       }
       return json(200, {
         id,

@@ -115,6 +115,21 @@ function parseBody(lines: string[]): PracticeDefinition['body'] {
   return lines.join('\n').trim()
 }
 
+export function legacyAlternativeNotes(elements: DefinitionElement[]): string {
+  const legacyOptionNameById = new Map(elements.flatMap((element) => element.options.map((option) => [option.id, option.name] as const)))
+  return elements.map((element) => {
+    const options = element.options.map((option) => {
+      const toolMention = option.toolIdentifier ? ` #${option.toolIdentifier.split('/').pop()}` : ''
+      return `- **${option.name}**${toolMention}${option.description ? ` — ${option.description}` : ''}`
+    }).join('\n')
+    const rules = [
+      element.require_options.length ? `Shown when: ${element.require_options.map((id) => legacyOptionNameById.get(id) ?? 'an earlier option').join(', ')}.` : '',
+      element.reject_options.length ? `Hidden when: ${element.reject_options.map((id) => legacyOptionNameById.get(id) ?? 'an earlier option').join(', ')}.` : '',
+    ].filter(Boolean).join(' ')
+    return `### ${element.name}\n${element.description ? `${element.description}\n\n` : ''}${rules ? `${rules}\n\n` : ''}${options}`
+  }).join('\n\n')
+}
+
 export function parseDefinition(markdown: string): PracticeDefinition {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n')
   const { meta, rest: originalRest } = parseFrontmatter(lines)
@@ -148,7 +163,14 @@ export function parseDefinition(markdown: string): PracticeDefinition {
     for (const line of setupLines) {
       const heading = line.match(/^###\s+#?([\w-]+)\s*$/)
       if (heading) { finish(); slug = heading[1].toLowerCase(); continue }
-      if (!slug || !line.trim()) continue
+      if (!slug) continue
+      if (line.startsWith('  ') && (inCommand || inNotes)) {
+        const content = line.slice(2)
+        if (inCommand) command = command === '' ? content : command + '\n' + content
+        else notes.push(content)
+        continue
+      }
+      if (!line.trim()) continue
       const commandLine = line.match(/^\s*command:\s*(.*)$/i)
       const notesLine = line.match(/^\s*notes:\s*(.*)$/i)
       if (commandLine) { inCommand = commandLine[1] === '|'; command = inCommand ? '' : commandLine[1].trim() || null; inNotes = false; continue }
@@ -324,18 +346,7 @@ export function parseDefinition(markdown: string): PracticeDefinition {
   const body = parseBody(bodyParts)
   // Legacy alternatives remain visible as plain notes. Their linked tool
   // identifiers become body mentions, but never carry inferred setup data.
-  const legacyOptionNameById = new Map(elements.flatMap((element) => element.options.map((option) => [option.id, option.name] as const)))
-  const legacyNotes = elements.map((element) => {
-    const options = element.options.map((option) => {
-      const toolMention = option.toolIdentifier ? ` #${option.toolIdentifier.split('/').pop()}` : ''
-      return `- **${option.name}**${toolMention}${option.description ? ` — ${option.description}` : ''}`
-    }).join('\n')
-    const rules = [
-      element.require_options.length ? `Shown when: ${element.require_options.map((id) => legacyOptionNameById.get(id) ?? 'an earlier option').join(', ')}.` : '',
-      element.reject_options.length ? `Hidden when: ${element.reject_options.map((id) => legacyOptionNameById.get(id) ?? 'an earlier option').join(', ')}.` : '',
-    ].filter(Boolean).join(' ')
-    return `### ${element.name}\n${element.description ? `${element.description}\n\n` : ''}${rules ? `${rules}\n\n` : ''}${options}`
-  }).join('\n\n')
+  const legacyNotes = legacyAlternativeNotes(elements)
   const importBody = [body, legacyNotes ? `## Alternatives\n\n${legacyNotes}` : ''].filter(Boolean).join('\n\n')
   const legacyTools = elements.flatMap((element) => element.options.filter((option) => option.toolIdentifier).map((option) => ({
     slug: option.toolIdentifier!.split('/').pop()!.toLowerCase(), identifier: option.toolIdentifier,

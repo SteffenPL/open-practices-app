@@ -232,6 +232,12 @@ describe('renderDefinition', () => {
     expect(roundTrip.body).toBe(parsed.body)
   })
 
+  it('preserves spaces, blank lines and directive-like text in command blocks', () => {
+    const definition = parseDefinition('---\ntitle: Setup\n---\nUse #tool.\n## Tool setup\n### #tool\ncommand: |\n  if ok; then\n    run\n  \n  notes: literal\n  fi')
+    expect(definition.mentions?.[0].installCommand).toBe('if ok; then\n  run\n\nnotes: literal\nfi')
+    expect(parseDefinition(renderDefinition(definition)).mentions).toEqual(definition.mentions)
+  })
+
   it('does not treat a fenced ## Tool setup example as metadata', () => {
     const md = '---\ntitle: Example\n---\n\n```md\n## Tool setup\n\n### #example\ncommand: leave this in the example\n```\n'
     const parsed = parseDefinition(md)
