@@ -4,7 +4,7 @@ import { formatDate, teaser } from '../lib/markdown'
 import { imageUrl, isSignificantUpdate } from '../lib/practiceService'
 import type { FeedDetails, PracticeSkillTag } from '../lib/elementService'
 import type { Practice } from '../lib/types'
-import { PracticeCommands } from '../components/PracticeCommands'
+import { CopyCommandButton } from '../components/PracticeCommands'
 import { splitGuidedPracticeBody, type PracticeCommand } from './guidedPracticeContent'
 import './timeline.css'
 
@@ -41,13 +41,20 @@ function PracticePost({
   const authorName = practice.author?.display_name || 'Open Practices'
   const bodyParts = splitGuidedPracticeBody(practice.body)
 
+  const cli = bodyParts.guided
+    ? commands.map(({ command }) => command.trim()).filter(Boolean).join('\n')
+    : ''
+
   return <article className="timeline-post">
     <div className="timeline-post-lead">
       <Link to={`/practice/${practice.id}`} className="timeline-post-title"><h2>{practice.title}</h2></Link>
     </div>
     <div className="timeline-post-content">
       <p>{teaser(bodyParts.opening, 220)}</p>
-      {bodyParts.guided && <PracticeCommands commands={commands} />}
+      {cli && <div className="timeline-cli">
+        <pre aria-label="CLI commands">{cli}</pre>
+        <CopyCommandButton text={cli} label={`Copy commands for ${practice.title}`} />
+      </div>}
       {image && <Link to={`/practice/${practice.id}`} className="timeline-post-image-link" tabIndex={-1} aria-hidden="true"><img className="timeline-post-image" src={image} alt="" loading="lazy" /></Link>}
       <div className="timeline-post-foot">
       {practice.author?.avatar_url

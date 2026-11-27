@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { PracticeCommand } from '../pages/guidedPracticeContent'
 
-function CommandRow({ name, command }: PracticeCommand) {
+export function CopyCommandButton({ text, label }: { text: string; label: string }) {
   const [feedback, setFeedback] = useState('')
   useEffect(() => {
     if (!feedback) return
@@ -11,20 +11,26 @@ function CommandRow({ name, command }: PracticeCommand) {
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(command)
+      await navigator.clipboard.writeText(text)
       setFeedback('Copied')
     } catch {
       setFeedback('Select text to copy')
     }
   }
 
+  return <>
+    <button type="button" onClick={copy} aria-label={label}>{feedback || 'Copy'}</button>
+    <span className="command-feedback" role="status">{feedback}</span>
+  </>
+}
+
+function CommandRow({ name, command }: PracticeCommand) {
   return <li className="practice-command-row">
     <div className="practice-command-name">{name}</div>
     <div className="practice-command-line">
       <pre><code>{command}</code></pre>
-      <button type="button" onClick={copy} aria-label={`Copy command for ${name}`}>{feedback || 'Copy'}</button>
+      <CopyCommandButton text={command} label={`Copy command for ${name}`} />
     </div>
-    <span className="command-feedback" role="status">{feedback}</span>
   </li>
 }
 
