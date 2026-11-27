@@ -1,3 +1,4 @@
+import { PracticeCommands } from '../components/PracticeCommands'
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
@@ -87,7 +88,7 @@ export function GuidedPracticeEditor() {
   }
   const chooseTool = (name: string, command: string, toolId: string | null = null, details = '') => {
     const index = tools.length
-    setTools((current) => [...current, { name, command, details, image: null, toolId }])
+    setTools((current) => [...current, { name, command: '', details, image: null, toolId }])
     setActiveTool(index)
     setInput(''); setPendingImage(null); setShowTools(false); setStep('install')
     append(user(name, 'tool', index), assistant(`How do you install ${name}?`, [{ label: `Use ${command}`, value: command }]))
@@ -164,7 +165,7 @@ export function GuidedPracticeEditor() {
     } else if (target.field === 'tool') {
       setTools((current) => current.slice(0, target.fieldIndex ?? 0)); setEndingKind(''); setEnding(''); setEndingImage(null); setStep('tool')
     } else if (target.field === 'command') {
-      setTools((current) => current.map((tool, i) => i === target.fieldIndex ? { ...tool, details: '', image: null } : tool)); setEndingKind(''); setEnding(''); setEndingImage(null); setStep('install')
+      setTools((current) => current.map((tool, i) => i === target.fieldIndex ? { ...tool, command: '', details: '', image: null } : tool)); setEndingKind(''); setEnding(''); setEndingImage(null); setStep('install')
     }
     else if (target.field === 'details') {
       setTools((current) => current.map((tool, i) => i === target.fieldIndex ? { ...tool, details: '', image: null } : tool)); setEndingKind(''); setEnding(''); setEndingImage(null); setStep('tool-details')
@@ -374,14 +375,16 @@ function Message({ turn, onAction, onEdit, onDelete }: { turn: Turn; onAction: (
 function DraftPreview({ title, opening, openingImage, tools, endingKind, ending, endingImage, onEdit }: { title: string; opening: string; openingImage: ImageAttachment | null; tools: Tool[]; endingKind: string; ending: string; endingImage: ImageAttachment | null; onEdit: (field: AnswerField, index?: number) => void }) {
   return <aside className="chat-preview"><div className="chat-preview-head"><span className="chat-eyebrow">LIVE PREVIEW</span><span>Updates as you write</span></div><article>
     <div className="chat-preview-field"><div className="chat-preview-field-title"><span className="chat-preview-label">PRACTICE</span><button type="button" onClick={() => onEdit('practice')}>Edit</button></div><h2>{title || 'Your practice title'}</h2></div>
-    <div className="chat-preview-field"><div className="chat-preview-field-title"><span className="chat-preview-label">KEY POINT</span><button type="button" onClick={() => onEdit('opening')}>Edit</button></div><LinkifiedText text={opening || 'Your key point will appear here.'} /><Attachment image={openingImage} /></div>
+    <div className="chat-preview-field"><div className="chat-preview-field-title"><span className="chat-preview-label">KEY POINT</span><button type="button" onClick={() => onEdit('opening')}>Edit</button></div><LinkifiedText text={opening || 'Your key point will appear here.'} /></div>
+    <PracticeCommands commands={tools} />
+    <Attachment image={openingImage} />
     <section className="chat-preview-options"><div className="chat-preview-field-title"><h3>Options</h3>{tools.length === 0 && <button type="button" onClick={() => onEdit('tool')}>Add</button>}</div><OptionsTabs tools={tools} empty="Your suggested tools will appear here as tabs." onEdit={(index) => onEdit('details', index)} /></section>
     {ending && <footer className="chat-preview-field"><div className="chat-preview-field-title"><span className="chat-preview-label">{endingKind || 'CLOSING'}</span><button type="button" onClick={() => onEdit('ending')}>Edit</button></div><LinkifiedText text={ending} /><Attachment image={endingImage} /></footer>}
   </article></aside>
 }
 
 function DraftSummary({ draft }: { draft: Draft }) {
-  return <div className="chat-draft-summary"><span className="chat-summary-kicker">PRACTICE DRAFT</span><h2>{draft.title}</h2><LinkifiedText text={draft.opening} /><Attachment image={draft.openingImage} /><div className="chat-summary-options"><strong>Options</strong><OptionsTabs tools={draft.tools} empty="No options added." /></div><div className="chat-summary-ending"><strong>{draft.endingKind}:</strong><LinkifiedText text={draft.ending} /></div><Attachment image={draft.endingImage} /></div>
+  return <div className="chat-draft-summary"><span className="chat-summary-kicker">PRACTICE DRAFT</span><h2>{draft.title}</h2><LinkifiedText text={draft.opening} /><PracticeCommands commands={draft.tools} /><Attachment image={draft.openingImage} /><div className="chat-summary-options"><strong>Options</strong><OptionsTabs tools={draft.tools} empty="No options added." /></div><div className="chat-summary-ending"><strong>{draft.endingKind}:</strong><LinkifiedText text={draft.ending} /></div><Attachment image={draft.endingImage} /></div>
 }
 
 function OptionsTabs({ tools, empty, onEdit }: { tools: Tool[]; empty: string; onEdit?: (index: number) => void }) {
@@ -390,7 +393,7 @@ function OptionsTabs({ tools, empty, onEdit }: { tools: Tool[]; empty: string; o
   if (!tools.length) return <p className="chat-empty-preview">{empty}</p>
   return <div className="chat-option-tabs">
     <div className="chat-option-tab-list" role="tablist" aria-label="Practice options">{tools.map((tool, index) => <button key={`${tool.name}-${index}`} role="tab" aria-selected={active === tool} className={active === tool ? 'is-active' : ''} onClick={() => setActiveIndex(index)}>{tool.name}</button>)}</div>
-    {active && <div className="chat-option-tab-panel" role="tabpanel"><div className="chat-option-install"><code>{active.command || 'Add an install command'}</code>{onEdit && <button type="button" onClick={() => onEdit(activeIndex)}>Edit</button>}</div><LinkifiedText text={active.details || 'Guidance for this option will appear here.'} /><Attachment image={active.image} /></div>}
+    {active && <div className="chat-option-tab-panel" role="tabpanel"><div className="chat-option-install">{onEdit && <button type="button" onClick={() => onEdit(activeIndex)}>Edit</button>}</div><LinkifiedText text={active.details || 'Guidance for this option will appear here.'} /><Attachment image={active.image} /></div>}
   </div>
 }
 

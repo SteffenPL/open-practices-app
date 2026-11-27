@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { listPractices } from '../lib/practiceService'
 import type { Practice } from '../lib/types'
 import { TimelineFeed } from './TimelineFeed'
-import { getPracticeSkillTags, type PracticeSkillTag } from '../lib/elementService'
+import { getPracticeFeedDetails, type FeedDetails } from '../lib/elementService'
 
 const PAGE_SIZE = 10
 
@@ -12,7 +12,7 @@ export function TimelinePage({ searchQuery }: { searchQuery: string }) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [more, setMore] = useState(false)
-  const [toolTags, setToolTags] = useState<Record<string, PracticeSkillTag[]>>({})
+  const [details, setDetails] = useState<Record<string, FeedDetails>>({})
 
   const load = useCallback(async (from: number, replace: boolean) => {
     if (replace) setLoading(true)
@@ -23,8 +23,8 @@ export function TimelinePage({ searchQuery }: { searchQuery: string }) {
       setMore(page.length === PAGE_SIZE)
       setError(null)
       try {
-        const pageTags = await getPracticeSkillTags(page.map((practice) => practice.id))
-        setToolTags((previous) => replace ? pageTags : { ...previous, ...pageTags })
+        const pageDetails = await getPracticeFeedDetails(page.map((practice) => practice.id))
+        setDetails((previous) => replace ? pageDetails : { ...previous, ...pageDetails })
       } catch {
         // Skill labels are supplementary; a tag lookup should not block the feed.
       }
@@ -43,7 +43,7 @@ export function TimelinePage({ searchQuery }: { searchQuery: string }) {
   return (
     <TimelineFeed
       practices={practices}
-      toolTags={toolTags}
+      details={details}
       searchQuery={searchQuery}
       loading={loading}
       loadingMore={loadingMore}

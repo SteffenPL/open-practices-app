@@ -1,3 +1,4 @@
+import { optionCommands, type PracticeCommand } from '../pages/guidedPracticeContent'
 import { supabase } from './supabase'
 import type { Element } from './types'
 
@@ -56,38 +57,32 @@ export interface PracticeSkillTag {
   packageId: string
 }
 
-/** List named options linked to APM tools for a batch of feed practices. */
-export async function getPracticeSkillTags(
-  practiceIds: string[],
-): Promise<Record<string, PracticeSkillTag[]>> {
-  if (!supabase || practiceIds.length === 0) return {}
+export type FeedDetails = { tags: PracticeSkillTag[]; commands: PracticeCommand[] }
+
+export async function getPracticeFeedDetails(practiceIds: string[]): Promise<Record<string, FeedDetails>> {
+  if (!supabase || !practiceIds.length) return {}
   const { data, error } = await supabase
     .from('elements')
-    .select('practice_id, options(name, tool:tools(apm_id))')
+    .select('practice_id, position, options(name, description, position, tool:tools(apm_id))')
     .in('practice_id', practiceIds)
+    .order('position')
   if (error) throw error
 
-  const tagsByPractice: Record<string, PracticeSkillTag[]> = {}
-  for (const element of (data ?? []) as Array<{
-    practice_id: string
-    options: Array<{
-      name: string
-      tool: { apm_id: string | null }[] | { apm_id: string | null } | null
-    }>
-  }>) {
-    for (const option of element.options ?? []) {
+  const byPractice: Record<string, FeedDetails> = {}
+  for (const element of data ?? []) {
+    const details = byPractice[element.practice_id] ??= { tags: [], commands: [] }
+    const options = element.options.sort((a, b) => a.position - b.position)
+    details.commands.push(...optionCommands(options))
+    for (const option of options) {
       const tool = Array.isArray(option.tool) ? option.tool[0] : option.tool
       const packageId = tool?.apm_id
       const name = option.name.trim()
-      if (!packageId || !name) continue
-      const tags = tagsByPractice[element.practice_id] ?? []
-      if (!tags.some((tag) => tag.name.toLowerCase() === name.toLowerCase())) {
-        tags.push({ name, packageId })
-        tagsByPractice[element.practice_id] = tags
+      if (packageId && name && !details.tags.some(tag => tag.name.toLowerCase() === name.toLowerCase())) {
+        details.tags.push({ name, packageId })
       }
     }
   }
-  return tagsByPractice
+  return byPractice
 }
 
 export function toElementDrafts(elements: Element[]): ElementDraft[] {

@@ -1,10 +1,12 @@
-import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { PracticeCommands } from './PracticeCommands'
+import { optionCommands } from '../pages/guidedPracticeContent'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CompiledPanel } from './CompiledPanel'
 import type { Element } from '../lib/types'
 import { withInstallCommand } from '../pages/guidedPracticeContent'
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
 const element: Element = {
   id: 'element-1',
@@ -21,11 +23,16 @@ const element: Element = {
 }
 
 describe('CompiledPanel', () => {
-  it('copies every guided tool command, including arbitrary commands', () => {
-    const { container } = render(<CompiledPanel elements={[element]} selection={{}} guidedPractice />)
-
-    expect(screen.getByRole('heading', { name: 'Install commands' })).toBeTruthy()
-    expect(container.querySelector('pre code')?.textContent).toBe('apm install org/first\nnpm install second-tool')
+  it('copies only the selected authored command and excludes options without commands', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const { container } = render(<PracticeCommands commands={optionCommands([...element.options, { name: 'Unconfigured', description: 'Only guidance' }])} />)
+    expect([...container.querySelectorAll('code')].map(code => code.textContent)).toEqual([
+      'apm install org/first', 'npm install second-tool',
+    ])
+    expect(screen.getAllByRole('button', { name: /Copy command for/ })).toHaveLength(2)
+    fireEvent.click(screen.getByRole('button', { name: 'Copy command for Second tool' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledExactlyOnceWith('npm install second-tool'))
   })
 
   it('keeps legacy command output for unmarked practices', () => {

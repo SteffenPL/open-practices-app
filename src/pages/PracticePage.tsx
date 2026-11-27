@@ -1,3 +1,4 @@
+import { PracticeCommands } from '../components/PracticeCommands'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Markdown from 'react-markdown'
@@ -18,7 +19,7 @@ import { ElementsReader } from '../components/ElementsReader'
 import { CompiledPanel } from '../components/CompiledPanel'
 import { CommentsSection } from '../components/CommentsSection'
 import { SyncButton } from '../components/SyncButton'
-import { splitGuidedPracticeBody } from './guidedPracticeContent'
+import { optionCommands, splitGuidedPracticeBody } from './guidedPracticeContent'
 
 export function PracticePage() {
   const { id } = useParams<{ id: string }>()
@@ -32,14 +33,20 @@ export function PracticePage() {
 
   useEffect(() => {
     if (!id) return
+    let active = true
+    setPractice(null)
+    setElements([])
+    setSelection({})
+    setError(null)
     getPractice(id)
-      .then(setPractice)
-      .catch((e) =>
-        setError(e instanceof Error ? e.message : 'Failed to load practice'),
-      )
+      .then(value => { if (active) setPractice(value) })
+      .catch(error => {
+        if (active) setError(error instanceof Error ? error.message : 'Failed to load practice')
+      })
     getElements(id)
-      .then(setElements)
-      .catch(() => setElements([]))
+      .then(value => { if (active) setElements(value) })
+      .catch(() => { if (active) setElements([]) })
+    return () => { active = false }
   }, [id])
 
   if (error) {
@@ -75,6 +82,25 @@ export function PracticePage() {
     <main className="page">
       <article className="card practice-detail">
         <h1>{practice.title}</h1>
+        <div className="markdown-body">
+          <Markdown remarkPlugins={[remarkGfm]}>{bodyParts.opening}</Markdown>
+        </div>
+        {bodyParts.guided && <PracticeCommands commands={elements.flatMap(element => optionCommands(element.options))} />}
+        {image && <img className="practice-image" src={image} alt="" />}
+        <ElementsReader
+          elements={elements}
+          selection={selection}
+          guidedPractice={bodyParts.guided}
+          onSelect={(elementId, optionId) =>
+            setSelection((prev) => ({ ...prev, [elementId]: optionId }))
+          }
+        />
+        {elements.length > 0 && !bodyParts.guided && (
+          <CompiledPanel elements={elements} selection={selection} />
+        )}
+        {bodyParts.closing && <div className="markdown-body practice-closing">
+          <Markdown remarkPlugins={[remarkGfm]}>{bodyParts.closing}</Markdown>
+        </div>}
         <p className="muted practice-meta">
           {practice.author?.avatar_url && (
             <img
@@ -98,24 +124,6 @@ export function PracticePage() {
             )}
           </span>
         </p>
-        {image && <img className="practice-image" src={image} alt="" />}
-        <div className="markdown-body">
-          <Markdown remarkPlugins={[remarkGfm]}>{bodyParts.opening}</Markdown>
-        </div>
-        <ElementsReader
-          elements={elements}
-          selection={selection}
-          guidedPractice={bodyParts.guided}
-          onSelect={(elementId, optionId) =>
-            setSelection((prev) => ({ ...prev, [elementId]: optionId }))
-          }
-        />
-        {elements.length > 0 && (
-          <CompiledPanel elements={elements} selection={selection} guidedPractice={bodyParts.guided} />
-        )}
-        {bodyParts.closing && <div className="markdown-body practice-closing">
-          <Markdown remarkPlugins={[remarkGfm]}>{bodyParts.closing}</Markdown>
-        </div>}
         <CommentsSection
           practiceId={practice.id}
           practiceAuthorId={practice.author_id}

@@ -3,7 +3,7 @@ import type { Element } from '../lib/types'
 import { visibleElements, type Selection } from '../lib/visibility'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { cleanOptionDescription, getInstallCommand } from '../pages/guidedPracticeContent'
+import { cleanOptionDescription } from '../pages/guidedPracticeContent'
 
 interface Props {
   elements: Element[]
@@ -67,7 +67,6 @@ function OptionTabs({ element, selectedId, onSelect }: { element: Element; selec
     </div>
     {active && <div className="practice-option-tab-panel" role="tabpanel">
       {active.tool && <p className="practice-option-tool">{active.tool.name}</p>}
-      {getInstallCommand(active.description) && <pre className="practice-option-command"><code>{getInstallCommand(active.description)}</code></pre>}
       <div className="markdown-body"><Markdown remarkPlugins={[remarkGfm]}>{cleanOptionDescription(active.description)}</Markdown></div>
     </div>}
   </div>

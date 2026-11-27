@@ -81,3 +81,12 @@ export function makeGuidedElementDraft(options: OptionDraft[]): ElementDraft {
     options,
   }
 }
+
+export type PracticeCommand = { name: string; command: string }
+
+export function optionCommands(options: { name: string; description: string | null }[]): PracticeCommand[] {
+  return options.flatMap(option => {
+    const command = getInstallCommand(option.description)
+    return command?.trim() ? [{ name: option.name, command }] : []
+  })
+}
