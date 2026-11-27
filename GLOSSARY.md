@@ -1,31 +1,23 @@
 # Open Practices
 
-A community platform where people publish descriptions of their (mostly AI) working practices as articles, optionally containing an interactive tool combination that readers walk through to compile a setup.
+A community platform where people publish working practices and maintain a shared catalog of the tools they use.
 
 ## Language
 
 **Practice**:
-An article published by a user: title, rich-text description, optional image, a list of Elements, plus comments.
-_Avoid_: Post, blog post, article
-
-**Element**:
-One decision point within a Practice (e.g. "which orchestration skill?"). An Element can be about anything — a skill, a practice, a model, a tool — not just installables. It offers Options and can be shown or hidden by other Elements' Options.
-_Avoid_: Ingredient, step, node, combination
-_Avoid_: Step, node
-
-**Option**:
-One selectable choice within an Element, with a name, description, an optional Tool identity, and rules for showing or hiding later Elements.
+A published title and key message describing how someone works. The author can mention Tools and include install commands and setup notes.
 
 **Tool**:
-An external, installable thing referenced by an Option; identified by an APM package ID and/or a GitHub repository as fallback. Tools have shared identity across Practices.
-_Avoid_: Skill, plugin (when referring to the catalog entity)
+A shared catalog entry for a tool people use in their Practices. Its identifiers can include an APM package, a GitHub link, and a project website.
 
-**Compiled Practice**:
-The generated output of a reader's picked Options: a copy-paste terminal command and/or an APM YAML file.
-_Avoid_: Compiled command, install script
+**Tool Mention**:
+An inline reference such as `#tool-name` connecting the text of a Practice to a Tool.
+
+**Install List**:
+The CLI commands an author chooses to include for the Tools mentioned in a Practice.
 
 **Practice Definition**:
-The canonical Markdown-based interchange format for a Practice: frontmatter (title, image), prose body, and Element tables. Used both by repository Import and by the agent API.
+The Markdown format for exchanging a Practice through repository Import, Sync, and the agent API.
 _Avoid_: Practice file (when meaning the format, not a concrete file)
 
 **Import**:
