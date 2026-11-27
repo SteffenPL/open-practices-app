@@ -6,9 +6,9 @@ import { SetupNotice } from './components/SetupNotice'
 import { Header } from './components/Header'
 import { TimelinePage } from './pages/TimelinePage'
 import { PracticePage } from './pages/PracticePage'
-import { EditorPage } from './pages/EditorPage'
+import { CatalogPage, NewToolPage, ToolPage } from './pages/ToolCatalog'
 import { ProfilePage } from './pages/ProfilePage'
-import { GuidedPracticeEditor } from './pages/GuidedPracticeEditor'
+import { MentionPracticeEditor } from './pages/MentionPracticeEditor'
 
 function Shell() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -42,8 +42,11 @@ function Shell() {
       <Routes>
         <Route path="/" element={<TimelinePage searchQuery={searchQuery} />} />
         <Route path="/practice/:id" element={<PracticePage />} />
-        <Route path="/new" element={<GuidedPracticeEditor />} />
-        <Route path="/edit/:id" element={<EditorPage />} />
+        <Route path="/new" element={<MentionPracticeEditor />} />
+        <Route path="/edit/:id" element={<MentionPracticeEditor />} />
+        <Route path="/tools" element={<CatalogPage />} />
+        <Route path="/tools/new" element={<NewToolPage />} />
+        <Route path="/tools/:id" element={<ToolPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

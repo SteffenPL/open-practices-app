@@ -1,0 +1,25 @@
+.tool-page .card { gap: 1.15rem; }
+.tool-page, .tool-editor { overflow-wrap: anywhere; }
+.tool-back, .tool-actions a { color: var(--app-accent); font-size: .85rem; }
+.tool-heading, .tool-actions, .tool-install { display:flex; flex-wrap:wrap; align-items:center; gap:.65rem; }
+.tool-heading { justify-content:space-between; }
+.tool-editor, .tool-search, .tool-editor label, .tool-section, .tool-merge-confirm { display:grid; gap:.5rem; }
+.tool-editor { gap:1rem; }
+.tool-editor input, .tool-editor textarea, .tool-search input { width:100%; }
+.tool-list, .tool-history { display:grid; padding:0; margin:0; }
+.tool-row, .tool-match, .tool-history li { display:grid; gap:.35rem; padding:.9rem 0; border-top:1px solid var(--app-rule); }
+.tool-row { text-decoration:none; }
+.tool-row:hover strong, .tool-back:hover { text-decoration:underline; }
+.tool-row p, .tool-match small, .tool-row small { color:var(--app-muted); font-size:.86rem; }
+.tool-install pre { white-space:pre-wrap; word-break:break-word; flex:1 1 15rem; margin:0; }
+.tool-install, .tool-matches { border:1px solid var(--app-rule); border-radius:8px; padding:.8rem; }
+.tool-section { padding-top:1rem; border-top:1px solid var(--app-rule); }
+.tool-page summary { cursor:pointer; font-size:.9rem; }
+.tool-history li { list-style:none; }
+.tool-history summary strong { text-transform:capitalize; }
+.tool-editor dl, .tool-history dl { margin:.5rem 0; font-size:.85rem; }
+.tool-editor dt, .tool-history dt { color:var(--app-muted); }
+.tool-editor dd, .tool-history dd { margin:.2rem 0 .6rem; }
+.tool-history ins, .tool-history del { display:block; white-space:pre-wrap; }
+.tool-matches h3 { margin:.2rem 0 .6rem; }
+.tool-merge-confirm { background:var(--app-paper); border-radius:8px; padding:.8rem; }
