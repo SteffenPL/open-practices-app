@@ -219,6 +219,43 @@ title: x
 })
 
 describe('renderDefinition', () => {
+  it('round-trips multiline per-tool commands and setup notes', () => {
+    const md = `---\ntitle: Setup\n---\n\nUse #tool-a to begin.\n\n## Tool setup\n\n### #tool-a\ncommand: |\n  apm install vendor/tool\n  apm config set mode safe\nnotes: |\n  First setup step.\n  Second setup step.\n`
+    const parsed = parseDefinition(md)
+    expect(parsed.mentions?.[0]).toMatchObject({
+      token: '#tool-a', slug: 'tool-a',
+      installCommand: 'apm install vendor/tool\napm config set mode safe',
+      notes: 'First setup step.\nSecond setup step.',
+    })
+    const roundTrip = parseDefinition(renderDefinition(parsed))
+    expect(roundTrip.mentions).toEqual(parsed.mentions)
+    expect(roundTrip.body).toBe(parsed.body)
+  })
+
+  it('does not treat a fenced ## Tool setup example as metadata', () => {
+    const md = '---\ntitle: Example\n---\n\n```md\n## Tool setup\n\n### #example\ncommand: leave this in the example\n```\n'
+    const parsed = parseDefinition(md)
+    expect(parsed.body).toContain('## Tool setup')
+    expect(parsed.mentions).toEqual([])
+  })
+
+  it('converts old alternatives to readable body notes without re-export duplication', () => {
+    const parsed = parseDefinition(`---\ntitle: Old\n---\n\n## Element: Which tool?\n\n> Requires: one\n\n| Option | Why/when | Tool |\n| --- | --- | --- |\n| one | first | owner/tool-one |\n| two | second | |\n`)
+    expect(parsed.body).toContain('### Which tool?')
+    expect(parsed.body).toContain('Shown when: one.')
+    expect(parsed.body).toContain('#tool-one')
+    const exported = renderDefinition(parsed)
+    expect(exported.match(/### Which tool\?/g)).toHaveLength(1)
+    expect(parseDefinition(exported).body).toBe(parsed.body)
+  })
+
+  it('keeps visibility names when they refer to an earlier element', () => {
+    const parsed = parseDefinition(`---\ntitle: Rules\n---\n\n## Element: First\n\n| Option | Why/when | Tool |\n| --- | --- | --- |\n| a | first | |\n| b | second | |\n\n## Element: Second\n\n> Requires: a\n> Incompatible: b\n\n| Option | Why/when | Tool |\n| --- | --- | --- |\n| c | third | |\n| d | fourth | |\n`)
+    expect(parsed.body).toContain('Shown when: a.')
+    expect(parsed.body).toContain('Hidden when: b.')
+    expect(renderDefinition(parsed)).not.toContain('an earlier option')
+  })
+
   it('round-trips a parsed definition (parse -> render -> parse is stable)', () => {
     const once = parseDefinition(TABLE_DEFINITION)
     const twice = parseDefinition(renderDefinition(once))
@@ -226,24 +263,18 @@ describe('renderDefinition', () => {
     expect(twice.image).toBe(once.image)
     expect(twice.source).toBe(once.source)
     expect(twice.body).toBe(once.body)
-    expect(twice.elements.map((e) => e.name)).toEqual(
-      once.elements.map((e) => e.name),
-    )
-    const firstOnce = once.elements[0].options[0]
-    const firstTwice = twice.elements[0].options[0]
-    expect(firstTwice).toMatchObject({
-      name: firstOnce.name,
-      description: firstOnce.description,
-      toolIdentifier: firstOnce.toolIdentifier,
-    })
+    expect(twice.body).toContain('## Alternatives')
+    expect(twice.elements).toHaveLength(0)
+    expect(twice.body).toContain('superpowers')
+    expect(twice.body).toContain('#skills')
   })
 
   it('uses subsections when rendering long descriptions', () => {
     const once = parseDefinition(SUBSECTION_DEFINITION)
     const rendered = renderDefinition(once)
-    expect(rendered).toContain('### haiku')
+    expect(rendered).toContain('**haiku**')
     const twice = parseDefinition(rendered)
-    expect(twice.elements[0].options[0].description).toContain('multiple lines')
+    expect(twice.body).toContain('multiple lines')
   })
 
   it('renders directives as option names', () => {
@@ -269,8 +300,8 @@ title: x
 | d | fourth | |
 `
     const rendered = renderDefinition(parseDefinition(md))
-    expect(rendered).toContain('> Requires: a')
-    expect(rendered).toContain('> Incompatible: b')
+    expect(rendered).toContain('Shown when: a.')
+    expect(rendered).toContain('Hidden when: b.')
   })
 
   it('renders the definition for a body-only practice', () => {

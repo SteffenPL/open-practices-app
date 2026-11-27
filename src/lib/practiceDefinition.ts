@@ -37,7 +37,13 @@ export interface PracticeDefinition {
   source: string | null
   body: string
   elements: DefinitionElement[]
+  /** Ordered body occurrences. Setup is shared by repeated occurrences. */
+  mentions?: { token: string; slug: string; toolIdentifier?: string | null; installCommand: string | null; notes: string | null }[]
+  /** Legacy alternatives are retained as ordinary prose in the new format. */
+  legacyNotes?: string
 }
+
+import { tokenizePracticeText } from './practiceText.ts'
 
 export class DefinitionError extends Error {}
 
@@ -111,7 +117,47 @@ function parseBody(lines: string[]): PracticeDefinition['body'] {
 
 export function parseDefinition(markdown: string): PracticeDefinition {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n')
-  const { meta, rest } = parseFrontmatter(lines)
+  const { meta, rest: originalRest } = parseFrontmatter(lines)
+  // V2 keeps optional per-tool setup in a separate Markdown section. This
+  // section is metadata and is excluded from the practice's displayed body.
+  let rest = originalRest
+  let setupIndex = -1
+  let fence: string | null = null
+  for (let i = 0; i < rest.length; i++) {
+    const fenceLine = rest[i].match(/^\s*(`{3,}|~{3,})/)
+    if (fenceLine) {
+      if (!fence) fence = fenceLine[1]
+      else if (fenceLine[1][0] === fence[0] && fenceLine[1].length >= fence.length) fence = null
+      continue
+    }
+    if (!fence && /^## Tool setup\s*$/i.test(rest[i].trim())) { setupIndex = i; break }
+  }
+  const setups = new Map<string, { installCommand: string | null; notes: string | null }>()
+  if (setupIndex >= 0) {
+    const setupLines = rest.slice(setupIndex + 1)
+    rest = rest.slice(0, setupIndex)
+    let slug = ''
+    let command: string | null = null
+    let notes: string[] = []
+    let inNotes = false
+    let inCommand = false
+    const finish = () => {
+      if (slug) setups.set(slug, { installCommand: command, notes: notes.join('\n').trim() || null })
+      slug = ''; command = null; notes = []; inNotes = false; inCommand = false
+    }
+    for (const line of setupLines) {
+      const heading = line.match(/^###\s+#?([\w-]+)\s*$/)
+      if (heading) { finish(); slug = heading[1].toLowerCase(); continue }
+      if (!slug || !line.trim()) continue
+      const commandLine = line.match(/^\s*command:\s*(.*)$/i)
+      const notesLine = line.match(/^\s*notes:\s*(.*)$/i)
+      if (commandLine) { inCommand = commandLine[1] === '|'; command = inCommand ? '' : commandLine[1].trim() || null; inNotes = false; continue }
+      if (notesLine) { inNotes = true; inCommand = false; if (notesLine[1] && notesLine[1] !== '|') notes.push(notesLine[1]); continue }
+      if (inNotes) notes.push(line.replace(/^\s{2,}/, ''))
+      else if (inCommand) command = [command, line.replace(/^\s{2,}/, '')].filter(Boolean).join('\n')
+    }
+    finish()
+  }
 
   const title = (meta.title ?? '').trim()
   if (!title) {
@@ -275,12 +321,43 @@ export function parseDefinition(markdown: string): PracticeDefinition {
     element.reject_options = resolve(element.reject_options, 'Incompatible')
   }
 
+  const body = parseBody(bodyParts)
+  // Legacy alternatives remain visible as plain notes. Their linked tool
+  // identifiers become body mentions, but never carry inferred setup data.
+  const legacyOptionNameById = new Map(elements.flatMap((element) => element.options.map((option) => [option.id, option.name] as const)))
+  const legacyNotes = elements.map((element) => {
+    const options = element.options.map((option) => {
+      const toolMention = option.toolIdentifier ? ` #${option.toolIdentifier.split('/').pop()}` : ''
+      return `- **${option.name}**${toolMention}${option.description ? ` — ${option.description}` : ''}`
+    }).join('\n')
+    const rules = [
+      element.require_options.length ? `Shown when: ${element.require_options.map((id) => legacyOptionNameById.get(id) ?? 'an earlier option').join(', ')}.` : '',
+      element.reject_options.length ? `Hidden when: ${element.reject_options.map((id) => legacyOptionNameById.get(id) ?? 'an earlier option').join(', ')}.` : '',
+    ].filter(Boolean).join(' ')
+    return `### ${element.name}\n${element.description ? `${element.description}\n\n` : ''}${rules ? `${rules}\n\n` : ''}${options}`
+  }).join('\n\n')
+  const importBody = [body, legacyNotes ? `## Alternatives\n\n${legacyNotes}` : ''].filter(Boolean).join('\n\n')
+  const legacyTools = elements.flatMap((element) => element.options.filter((option) => option.toolIdentifier).map((option) => ({
+    slug: option.toolIdentifier!.split('/').pop()!.toLowerCase(), identifier: option.toolIdentifier,
+  })))
+  const legacySeen = new Map<string, number>()
+  const mentions = tokenizePracticeText(importBody).filter((token) => token.kind === 'mention').map((token) => {
+    const slug = token.text.slice(1).toLowerCase()
+    const setup = setups.get(slug)
+    const legacyIndex = legacySeen.get(slug) ?? 0
+    const match = legacyTools.filter((item) => item.slug === slug)[legacyIndex]
+    legacySeen.set(slug, legacyIndex + 1)
+    return { token: token.text, slug, toolIdentifier: match?.identifier ?? null, installCommand: setup?.installCommand ?? null, notes: setup?.notes ?? null }
+  })
+
   return {
     title,
     image: image || null,
     source: meta.source?.trim() || null,
-    body: parseBody(bodyParts),
+    body: importBody,
     elements,
+    mentions,
+    legacyNotes,
   }
 }
 
@@ -291,6 +368,26 @@ export function renderDefinition(definition: PracticeDefinition): string {
   frontmatter.push('---')
 
   const parts: string[] = [frontmatter.join('\n'), definition.body]
+
+  if (definition.mentions?.some((mention) => mention.installCommand || mention.notes)) {
+    const seen = new Set<string>()
+    const setups: string[] = []
+    for (const mention of definition.mentions) {
+      if (seen.has(mention.slug)) continue
+      seen.add(mention.slug)
+      if (!mention.installCommand && !mention.notes) continue
+      setups.push(`### #${mention.slug}`)
+      if (mention.installCommand) setups.push(`command: |\n${mention.installCommand.split('\n').map((line) => `  ${line}`).join('\n')}`)
+      if (mention.notes) setups.push(`notes: |\n${mention.notes.split('\n').map((line) => `  ${line}`).join('\n')}`)
+    }
+    if (setups.length) parts.push(`## Tool setup\n\n${setups.join('\n\n')}`)
+  }
+
+  // Legacy options have already been converted to body notes by parseDefinition.
+  // Do not append the legacy structure again on export.
+  if (definition.legacyNotes !== undefined || definition.mentions?.length) {
+    return parts.filter((part) => part.trim()).join('\n\n') + '\n'
+  }
 
   const nameById = new Map<string, string>()
   for (const element of definition.elements) {

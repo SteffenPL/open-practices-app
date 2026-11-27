@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { updatePractice } from '../lib/practiceService'
-import { saveElements } from '../lib/elementService'
-import { provisionDrafts, sourceDisplayUrl, toFetchableSourceUrl } from '../lib/importService'
+import { saveMentionPractice } from '../lib/mentionService'
+import { provisionMentions, sourceDisplayUrl, toFetchableSourceUrl } from '../lib/importService'
 import { parseDefinition, type PracticeDefinition } from '../lib/practiceDefinition'
 import { describeSaveError } from '../lib/saveError'
 import type { Practice } from '../lib/types'
@@ -42,17 +41,16 @@ export function SyncButton({ practice }: { practice: Practice }) {
     setSyncing(true)
     setError(null)
     try {
-      const drafts = await provisionDrafts(parsed)
-      await updatePractice(
-        practice.id,
-        {
-          title: parsed.title,
-          body: parsed.body,
-          image_path: parsed.image,
-        },
+      const mentions = await provisionMentions(parsed)
+      await saveMentionPractice({
+        id: practice.id,
+        title: parsed.title,
+        body: parsed.body,
+        image_path: parsed.image,
+        mentions,
         significant,
-      )
-      await saveElements(practice.id, drafts)
+        source_url: practice.source_url,
+      })
       navigate(0) // reload the practice page
     } catch (e) {
       console.error('Sync failed:', e)

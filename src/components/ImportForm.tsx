@@ -1,15 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
-import {
-  createPractice,
-} from '../lib/practiceService'
-import { saveElements } from '../lib/elementService'
 import { describeSaveError } from '../lib/saveError'
 import {
   DEFAULT_PATH,
   fetchDefinition,
-  provisionDrafts,
+  provisionMentions,
+  publishImportedPractice,
 } from '../lib/importService'
 import {
   parseDefinition,
@@ -26,6 +23,7 @@ export function ImportForm() {
   const [parsed, setParsed] = useState<PracticeDefinition | null>(null)
   const [usedPath, setUsedPath] = useState<string | null>(null)
   const [rawUrl, setRawUrl] = useState<string | null>(null)
+  const [requestId, setRequestId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,6 +37,7 @@ export function ImportForm() {
       setParsed(parseDefinition(markdown))
       setUsedPath(p)
       setRawUrl(url)
+      setRequestId(crypto.randomUUID())
     } catch (e) {
       setError(
         e instanceof Error ? e.message : 'Could not load the definition.',
@@ -49,18 +48,19 @@ export function ImportForm() {
   }
 
   const publish = async () => {
-    if (!parsed || !user) return
+    if (!parsed || !user || !requestId) return
     setPublishing(true)
     setError(null)
     try {
-      const drafts = await provisionDrafts(parsed)
-      const practice = await createPractice(user.id, {
+      const mentions = await provisionMentions(parsed)
+      const practice = await publishImportedPractice({
+        requestId,
         title: parsed.title,
         body: parsed.body,
         image_path: parsed.image,
+        mentions,
         source_url: rawUrl,
       })
-      await saveElements(practice.id, drafts)
       navigate(`/practice/${practice.id}`)
     } catch (e) {
       console.error('Publishing failed:', e)

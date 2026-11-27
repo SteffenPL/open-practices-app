@@ -25,7 +25,51 @@ const CORS_HEADERS = {
 interface Route {
   method: string
   segments: string[]
-  body?: { definition?: string; significant?: boolean }
+  body?: { definition?: string; significant?: boolean; request_id?: string }
+}
+
+async function resolveDefinitionMentions(client: SupabaseClient, definition: PracticeDefinition) {
+  const result = []
+  for (const mention of definition.mentions ?? []) {
+    let tool: { id: string; slug: string; merged_into: string | null } | null = null
+    if (mention.toolIdentifier) {
+      const id = mention.toolIdentifier.trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\/+$/, '').toLowerCase()
+      const byPackage = await client.from('tools').select('id,slug,merged_into').eq('apm_id', id).maybeSingle()
+      tool = byPackage.data
+      if (!tool) {
+        const byRepo = await client.from('tools').select('id,slug,merged_into').eq('repo_url', `https://github.com/${id}`).limit(1).maybeSingle()
+        tool = byRepo.data
+      }
+      if (!tool) continue // unknown legacy package stays a plain-text hashtag
+    } else {
+      const bySlug = await client.from('tools').select('id,slug,merged_into').eq('slug', mention.slug).maybeSingle()
+      tool = bySlug.data
+    }
+    if (!tool) throw new Error(`Tool #${mention.slug} is not in the catalog.`)
+    result.push({ tool_id: tool.merged_into ?? tool.id, token: mention.token, install_command: mention.installCommand, notes: mention.notes })
+  }
+  return result
+}
+
+async function saveDefinition(client: SupabaseClient, definition: PracticeDefinition, options: {
+  id?: string; significant?: boolean; requestId?: string; sourceUrl?: string | null
+}) {
+  const mentions = await resolveDefinitionMentions(client, definition)
+  const args: Record<string, unknown> = {
+    p_title: definition.title, p_body: definition.body,
+    p_image_path: definition.image, p_mentions: mentions,
+  }
+  const operation = !options.id && options.requestId
+    ? client.rpc('create_mention_practice_once', {
+        ...args, p_request_id: options.requestId, p_source_url: options.sourceUrl ?? null,
+      })
+    : client.rpc('save_mention_practice', {
+        ...args, p_id: options.id ?? null,
+        p_significant: options.significant ?? false, p_source_url: options.sourceUrl ?? null,
+      })
+  const { data, error } = await operation
+  if (error) throw new Error(error.message)
+  return data as { id: string }
 }
 
 function json(status: number, payload: unknown): Response {
@@ -50,61 +94,6 @@ async function userClient(req: Request): Promise<
   return { client, userId: data.user.id }
 }
 
-/** Same provisioning rules as the app's tool service, on the user client. */
-async function resolveToolId(
-  client: SupabaseClient,
-  input: string,
-): Promise<string | null> {
-  // Normalize: a GitHub URL becomes owner/repo; identifiers must be
-  // filter-safe (mirrors the app's normalizeToolIdentifier).
-  let id = input.trim().replace(/\/+$/, '')
-  const urlMatch = id.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)/)
-  if (urlMatch) id = `${urlMatch[1]}/${urlMatch[2]}`
-  if (!/^[\w@.-]+\/[\w@.-]+$/.test(id)) return null
-
-  const repoUrl = `https://github.com/${id}`
-  const filter = `apm_id.eq.${id},repo_url.eq.${repoUrl}`
-
-  const { data: existing } = await client
-    .from('tools')
-    .select('id')
-    .or(filter)
-    .maybeSingle()
-  if (existing) return existing.id as string
-
-  let name = id
-  let description: string | null = null
-  try {
-    const res = await fetch(`https://api.github.com/repos/${id}`)
-    if (res.ok) {
-      const repo = await res.json()
-      if (repo.name) name = repo.name
-      if (repo.description) description = repo.description
-    }
-  } catch {
-    // best-effort metadata
-  }
-
-  const { data: tool, error } = await client
-    .from('tools')
-    .insert({ apm_id: id, repo_url: repoUrl, name, description })
-    .select('id')
-    .single()
-  if (error) {
-    if (error.code === '23505') {
-      // Lost a provisioning race: use the row that won.
-      const { data: raced } = await client
-        .from('tools')
-        .select('id')
-        .or(filter)
-        .maybeSingle()
-      if (raced) return raced.id as string
-    }
-    return null
-  }
-  return tool.id as string
-}
-
 /**
  * The raw file URL a practice's definition is fetched from (Sync).
  * Frontmatter `source` may be a repo URL or a repo blob URL; derive the
@@ -126,57 +115,8 @@ function toFetchableSourceUrl(url: string): string {
   return trimmed
 }
 
-async function persistElements(
-  client: SupabaseClient,
-  practiceId: string,
-  definition: PracticeDefinition,
-): Promise<void> {
-  const { error: deleteError } = await client
-    .from('elements')
-    .delete()
-    .eq('practice_id', practiceId)
-  if (deleteError) throw new Error(deleteError.message)
-
-  const rows = []
-  for (const [index, element] of definition.elements.entries()) {
-    rows.push({
-      id: element.id,
-      practice_id: practiceId,
-      position: index,
-      name: element.name,
-      description: element.description || null,
-      require_options: element.require_options,
-      reject_options: element.reject_options,
-    })
-  }
-  if (rows.length > 0) {
-    const { error } = await client.from('elements').insert(rows)
-    if (error) throw new Error(error.message)
-  }
-
-  const optionRows = []
-  for (const element of definition.elements) {
-    for (const [index, option] of element.options.entries()) {
-      optionRows.push({
-        id: option.id,
-        element_id: element.id,
-        position: index,
-        name: option.name,
-        description: option.description || null,
-        tool_id: option.toolIdentifier
-          ? await resolveToolId(client, option.toolIdentifier)
-          : null,
-      })
-    }
-  }
-  if (optionRows.length > 0) {
-    const { error } = await client.from('options').insert(optionRows)
-    if (error) throw new Error(error.message)
-  }
-}
-
 function siteUrl(id: string): string {
-  return `https://steffenpl.github.io/open-practices-app/#/practice/${id}`
+  return `https://steffenpl-share.exe.xyz/open-practices/#/practice/${id}`
 }
 
 Deno.serve(async (req) => {
@@ -202,58 +142,36 @@ Deno.serve(async (req) => {
     })
   }
   const { client, userId } = auth
+  const requestBody = body ?? {}
 
   try {
     if (req.method === 'POST' && segments[0] === 'practices' && segments.length === 1) {
-      const definition = parseDefinition(body.definition ?? '')
-      const { data: practice, error } = await client
-        .from('practices')
-        .insert({
-          author_id: userId,
-          title: definition.title,
-          body: definition.body,
-          image_path: definition.image,
-          source_url: definition.source
-            ? toFetchableSourceUrl(definition.source)
-            : null,
-        })
-        .select('id')
-        .single()
-      if (error) throw new Error(error.message)
-      await persistElements(client, practice.id as string, definition)
+      const definition = parseDefinition(requestBody.definition ?? '')
+      const practice = await saveDefinition(client, definition, {
+        requestId: requestBody.request_id,
+        sourceUrl: definition.source ? toFetchableSourceUrl(definition.source) : null,
+      })
       return json(201, { id: practice.id, url: siteUrl(practice.id as string) })
     }
 
     if (req.method === 'PATCH' && segments[0] === 'practices' && segments.length === 2) {
       const id = segments[1]
-      const { data: practice, error: fetchError } = await client
+      const { data: existingPractice, error: fetchError } = await client
         .from('practices')
         .select('id, author_id')
         .eq('id', id)
         .single()
-      if (fetchError || !practice) {
+      if (fetchError || !existingPractice) {
         return json(404, { error: 'Practice not found.' })
       }
-      if (practice.author_id !== userId) {
+      if (existingPractice.author_id !== userId) {
         return json(403, { error: 'Not your practice.' })
       }
-      const definition = parseDefinition(body.definition ?? '')
-      const now = new Date().toISOString()
-      const { error } = await client
-        .from('practices')
-        .update({
-          title: definition.title,
-          body: definition.body,
-          image_path: definition.image,
-          source_url: definition.source
-            ? toFetchableSourceUrl(definition.source)
-            : null,
-          updated_at: now,
-          ...(body.significant ? { last_significant_at: now } : {}),
-        })
-        .eq('id', id)
-      if (error) throw new Error(error.message)
-      await persistElements(client, id, definition)
+      const definition = parseDefinition(requestBody.definition ?? '')
+      await saveDefinition(client, definition, {
+        id, significant: requestBody.significant,
+        sourceUrl: definition.source ? toFetchableSourceUrl(definition.source) : null,
+      })
       return json(200, { id, url: siteUrl(id) })
     }
 
@@ -274,12 +192,16 @@ Deno.serve(async (req) => {
         .order('position', { ascending: true })
       const sorted = (elements ?? []).map((element: Record<string, unknown>) => ({
         ...element,
-        options: ((element.options as unknown[]) ?? [])
+        options: ((element.options as Record<string, unknown>[]) ?? [])
           .slice()
           .sort((a: Record<string, unknown>, b: Record<string, unknown>) =>
             (a.position as number) - (b.position as number),
           ),
       }))
+      const { data: mentionRows, error: mentionError } = await client.from('practice_tool_mentions')
+        .select('token,tool_id,position,tool:tools(slug,apm_id),setup:practice_tool_setups(install_command,notes)')
+        .eq('practice_id', id).order('position')
+      if (mentionError) throw new Error(mentionError.message)
       const definition: PracticeDefinition = {
         title: practice.title as string,
         // Definitions promise full URLs; editor-uploaded storage paths
@@ -308,6 +230,13 @@ Deno.serve(async (req) => {
             }),
           ),
         })),
+        mentions: (mentionRows ?? []).map((row: Record<string, unknown>) => {
+          const tool = row.tool as Record<string, unknown> | null
+          const setup = row.setup as Record<string, unknown> | null
+          return { token: row.token as string, slug: (tool?.slug as string) ?? '', toolIdentifier: (tool?.apm_id as string) ?? null,
+            installCommand: (setup?.install_command as string | null) ?? null, notes: (setup?.notes as string | null) ?? null }
+        }),
+        legacyNotes: practice.mention_format ? '' : undefined,
       }
       return json(200, {
         id,

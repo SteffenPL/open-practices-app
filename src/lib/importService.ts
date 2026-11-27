@@ -1,6 +1,9 @@
 import type { PracticeDefinition } from './practiceDefinition'
-import type { ElementDraft } from './elementService'
 import { provisionTool } from './toolService'
+import { listTools } from './catalogService'
+import type { MentionInput } from './mentionService'
+import type { Practice } from './types'
+import { saveMentionPractice } from './mentionService'
 
 /** Parse owner/repo out of a GitHub URL. */
 export function parseRepoUrl(repoUrl: string): { owner: string; repo: string } {
@@ -84,45 +87,49 @@ export async function fetchDefinition(
   )
 }
 
-/**
- * Convert a parsed definition into editor drafts, resolving tool
- * identifiers to Tool catalog ids (with per-identifier caching; failed
- * lookups leave the option unlinked rather than failing the whole import).
- */
-export async function provisionDrafts(
-  definition: PracticeDefinition,
-): Promise<ElementDraft[]> {
-  const cache = new Map<string, string | null>()
-  const resolve = async (identifier: string) => {
-    if (!cache.has(identifier)) {
-      try {
-        cache.set(identifier, (await provisionTool(identifier)).id)
-      } catch {
-        cache.set(identifier, null)
+/** Resolve mentions without inventing a command. Legacy linked options may
+ * provision by their explicit package identifier; new #slug mentions must
+ * already exist in the shared catalog. */
+export async function provisionMentions(definition: PracticeDefinition): Promise<MentionInput[]> {
+  const catalog = await listTools()
+  const bySlug = new Map(catalog.map((tool) => [tool.slug.toLowerCase(), tool]))
+  const byIdentifier = new Map(catalog.flatMap((tool) => [tool.apm_id, tool.repo_url]
+    .filter((id): id is string => Boolean(id)).map((id) => [id.toLowerCase(), tool] as const)))
+  const provisioned = new Map<string, string>()
+  const result: MentionInput[] = []
+  for (const mention of definition.mentions ?? []) {
+    let tool: (typeof catalog)[number] | undefined
+    if (mention.toolIdentifier) {
+      const normalized = mention.toolIdentifier.trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\/+$/, '').toLowerCase()
+      tool = byIdentifier.get(normalized) ?? byIdentifier.get(`https://github.com/${normalized}`)
+    } else {
+      tool = bySlug.get(mention.slug) ?? byIdentifier.get(mention.slug)
+    }
+    if (!tool && mention.toolIdentifier) {
+      const key = mention.toolIdentifier.toLowerCase()
+      let id = provisioned.get(key)
+      if (!id) {
+        try { id = (await provisionTool(mention.toolIdentifier)).id; provisioned.set(key, id) }
+        catch { /* an unavailable legacy tool remains an unlinked plain hashtag */ }
       }
+      if (id) tool = catalog.find((item) => item.id === id) ?? (await listTools()).find((item) => item.id === id)
+      // An unavailable legacy package remains plain text; never bind it to a
+      // different catalog entry just because the generated display slug matches.
+      if (!tool) continue
     }
-    return cache.get(identifier) ?? null
+    if (!tool) throw new Error(`Tool #${mention.slug} is not in the catalog. Add it to the catalog, then retry the import.`)
+    result.push({ tool_id: tool.id, token: mention.token, install_command: mention.installCommand, notes: mention.notes })
   }
+  return result
+}
 
-  const drafts: ElementDraft[] = []
-  for (const element of definition.elements) {
-    const options = []
-    for (const option of element.options) {
-      options.push({
-        id: option.id,
-        name: option.name,
-        description: option.description,
-        tool_id: option.toolIdentifier ? await resolve(option.toolIdentifier) : null,
-      })
-    }
-    drafts.push({
-      id: element.id,
-      name: element.name,
-      description: element.description,
-      require_options: element.require_options,
-      reject_options: element.reject_options,
-      options,
-    })
-  }
-  return drafts
+/** Create an imported post through the atomic mention RPC with a stable retry key. */
+export async function publishImportedPractice(input: {
+  requestId: string; title: string; body: string; image_path: string | null;
+  mentions: MentionInput[]; source_url: string | null
+}): Promise<Practice> {
+  return saveMentionPractice({
+    title: input.title, body: input.body, image_path: input.image_path,
+    mentions: input.mentions, source_url: input.source_url, request_id: input.requestId,
+  })
 }
