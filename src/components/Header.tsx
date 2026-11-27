@@ -45,7 +45,7 @@ export function Header({ theme, onThemeChange, searchQuery, onSearchChange }: Pr
         </Link>
         <form className="site-search" role="search" onSubmit={submitSearch}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3" /><path d="m15.5 15.5 4.1 4.1" /></svg>
-          <input type="search" value={draft} onChange={(event) => changeSearch(event.target.value)} placeholder="Search posts, people, skills" aria-label="Search posts, people, and skills" />
+          <input type="search" value={draft} onChange={(event) => changeSearch(event.target.value)} placeholder="Search practices, authors, tools" aria-label="Search practices, authors, and tools" />
         </form>
         <nav className="site-nav" aria-label="Account and appearance">
           <div className="site-theme-switch" role="group" aria-label="Color theme">
