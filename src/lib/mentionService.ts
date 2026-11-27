@@ -16,6 +16,7 @@ export interface PracticeMention extends MentionInput {
 
 export interface MentionPracticeInput {
   id?: string
+  request_id?: string
   title: string
   body: string
   image_path: string | null
@@ -26,11 +27,16 @@ export interface MentionPracticeInput {
 
 export async function saveMentionPractice(input: MentionPracticeInput): Promise<Practice> {
   if (!supabase) throw new Error('Supabase is not configured')
-  const { data, error } = await supabase.rpc('save_mention_practice', {
-    p_id: input.id ?? null, p_title: input.title, p_body: input.body,
-    p_image_path: input.image_path, p_mentions: input.mentions,
-    p_significant: input.significant ?? false, p_source_url: input.source_url ?? null,
-  }).single()
+  const fields = {
+    p_title: input.title, p_body: input.body, p_image_path: input.image_path,
+    p_mentions: input.mentions, p_source_url: input.source_url ?? null,
+  }
+  const operation = !input.id && input.request_id
+    ? supabase.rpc('create_mention_practice_once', { ...fields, p_request_id: input.request_id })
+    : supabase.rpc('save_mention_practice', {
+        ...fields, p_id: input.id ?? null, p_significant: input.significant ?? false,
+      })
+  const { data, error } = await operation.single()
   if (error) throw error
   return data as Practice
 }

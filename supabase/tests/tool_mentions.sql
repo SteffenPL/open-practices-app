@@ -47,6 +47,28 @@ begin
     jsonb_build_array(jsonb_build_object('tool_id',a.id,'token','#old')));
   if not exists(select 1 from public.catalog_tool_practices(b.id) where id=other.id) then raise exception 'Merged alias did not resolve'; end if;
 end $$;
+do $$
+declare request_id uuid:=gen_random_uuid(); first_post public.practices; retry public.practices; another public.practices;
+begin
+  select * into first_post from public.create_mention_practice_once(request_id,'Retry test','A draft',null,'[]');
+  select * into retry from public.create_mention_practice_once(request_id,'Retry test','A draft',null,'[]');
+  if retry.id<>first_post.id or (select count(*) from public.practices where title='Retry test' and author_id=auth.uid())<>1 then
+    raise exception 'Replayed create duplicated the post'; end if;
+  begin
+    perform public.create_mention_practice_once(request_id,'Changed','A draft',null,'[]');
+    raise exception 'Changed replay was accepted' using errcode='ZX100';
+  exception when raise_exception then null; end;
+  begin
+    perform public.save_mention_practice(gen_random_uuid(),'Missing','',null,'[]'); raise exception 'Missing edit created a post' using errcode='ZX100';
+  exception when insufficient_privilege then null; end;
+  perform set_config('request.jwt.claim.sub','adabc001-0000-4000-8000-000000000001',true);
+  select * into another from public.create_mention_practice_once(request_id,'Independent','',null,'[]');
+  if another.id=first_post.id then raise exception 'Request was not scoped by author'; end if;
+  delete from public.practices where id=another.id;
+  begin
+    perform public.create_mention_practice_once(request_id,'Independent','',null,'[]'); raise exception 'Deleted post resurrected' using errcode='ZX100';
+  exception when raise_exception then null; end;
+end $$;
 reset role;
 set local role anon;
 do $$begin
