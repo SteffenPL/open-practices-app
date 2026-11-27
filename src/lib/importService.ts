@@ -1,4 +1,5 @@
 import type { PracticeDefinition } from './practiceDefinition'
+import { normalizeToolIdentifier } from './toolIdentifier'
 import { provisionTool } from './toolService'
 import { listTools } from './catalogService'
 import type { MentionInput } from './mentionService'
@@ -92,21 +93,22 @@ export async function fetchDefinition(
  * already exist in the shared catalog. */
 export async function provisionMentions(definition: PracticeDefinition): Promise<MentionInput[]> {
   const catalog = await listTools()
-  const bySlug = new Map(catalog.map((tool) => [tool.slug.toLowerCase(), tool]))
-  const byIdentifier = new Map(catalog.flatMap((tool) => [tool.apm_id, tool.repo_url]
-    .filter((id): id is string => Boolean(id)).map((id) => [id.toLowerCase(), tool] as const)))
+  const bySlug = new Map(catalog.flatMap(tool => [tool, ...(tool.aliases ?? [])]
+    .map(entry => [entry.slug, tool] as const)))
+  const byPackage = new Map(catalog.flatMap(tool => [tool, ...(tool.aliases ?? [])]
+    .filter(entry => entry.apm_id).map(entry => [entry.apm_id, tool] as const)))
   const provisioned = new Map<string, string>()
   const result: MentionInput[] = []
   for (const mention of definition.mentions ?? []) {
     let tool: (typeof catalog)[number] | undefined
     if (mention.toolIdentifier) {
-      const normalized = mention.toolIdentifier.trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\/+$/, '').toLowerCase()
-      tool = byIdentifier.get(normalized) ?? byIdentifier.get(`https://github.com/${normalized}`)
+      const normalized = normalizeToolIdentifier(mention.toolIdentifier)
+      tool = byPackage.get(normalized)
     } else {
-      tool = bySlug.get(mention.slug) ?? byIdentifier.get(mention.slug)
+      tool = bySlug.get(mention.slug)
     }
     if (!tool && mention.toolIdentifier) {
-      const key = mention.toolIdentifier.toLowerCase()
+      const key = normalizeToolIdentifier(mention.toolIdentifier)
       let id = provisioned.get(key)
       if (!id) {
         try { id = (await provisionTool(mention.toolIdentifier)).id; provisioned.set(key, id) }

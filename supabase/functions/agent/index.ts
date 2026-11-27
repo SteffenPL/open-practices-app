@@ -9,6 +9,7 @@
 // All writes go through the user-scoped client, so RLS enforces ownership
 // on every call. No delete, no comments on this path.
 
+import { normalizeToolIdentifier } from '../../../src/lib/toolIdentifier.ts'
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import {
   parseDefinition,
@@ -33,13 +34,9 @@ async function resolveDefinitionMentions(client: SupabaseClient, definition: Pra
   for (const mention of definition.mentions ?? []) {
     let tool: { id: string; slug: string; merged_into: string | null } | null = null
     if (mention.toolIdentifier) {
-      const id = mention.toolIdentifier.trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\/+$/, '').toLowerCase()
+      const id = normalizeToolIdentifier(mention.toolIdentifier)
       const byPackage = await client.from('tools').select('id,slug,merged_into').eq('apm_id', id).maybeSingle()
       tool = byPackage.data
-      if (!tool) {
-        const byRepo = await client.from('tools').select('id,slug,merged_into').eq('repo_url', `https://github.com/${id}`).limit(1).maybeSingle()
-        tool = byRepo.data
-      }
       if (!tool) continue // unknown legacy package stays a plain-text hashtag
     } else {
       const bySlug = await client.from('tools').select('id,slug,merged_into').eq('slug', mention.slug).maybeSingle()
@@ -233,7 +230,7 @@ Deno.serve(async (req) => {
         mentions: (mentionRows ?? []).map((row: Record<string, unknown>) => {
           const tool = row.tool as Record<string, unknown> | null
           const setup = row.setup as Record<string, unknown> | null
-          return { token: row.token as string, slug: (tool?.slug as string) ?? '', toolIdentifier: (tool?.apm_id as string) ?? null,
+          return { token: row.token as string, slug: String(row.token).slice(1).toLowerCase(), toolIdentifier: (tool?.apm_id as string) ?? null,
             installCommand: (setup?.install_command as string | null) ?? null, notes: (setup?.notes as string | null) ?? null }
         }),
         legacyNotes: practice.mention_format ? '' : undefined,
