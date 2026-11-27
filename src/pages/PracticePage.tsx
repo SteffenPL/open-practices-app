@@ -1,4 +1,7 @@
-import { PracticeCommands } from '../components/PracticeCommands'
+import { PracticeText } from '../components/PracticeText'
+import { InstallList, MentionNotes } from '../components/MentionSetup'
+import { LegacyPracticeNotes } from '../components/LegacyPracticeNotes'
+import { listPracticeMentions, type PracticeMention } from '../lib/mentionService'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Markdown from 'react-markdown'
@@ -14,12 +17,9 @@ import { getElements } from '../lib/elementService'
 import { formatDate } from '../lib/markdown'
 import { sourceDisplayUrl } from '../lib/importService'
 import type { Element, Practice } from '../lib/types'
-import type { Selection } from '../lib/visibility'
-import { ElementsReader } from '../components/ElementsReader'
-import { CompiledPanel } from '../components/CompiledPanel'
 import { CommentsSection } from '../components/CommentsSection'
 import { SyncButton } from '../components/SyncButton'
-import { optionCommands, splitGuidedPracticeBody } from './guidedPracticeContent'
+import { splitGuidedPracticeBody } from './guidedPracticeContent'
 
 export function PracticePage() {
   const { id } = useParams<{ id: string }>()
@@ -27,7 +27,7 @@ export function PracticePage() {
   const navigate = useNavigate()
   const [practice, setPractice] = useState<Practice | null>(null)
   const [elements, setElements] = useState<Element[]>([])
-  const [selection, setSelection] = useState<Selection>({})
+  const [mentions, setMentions] = useState<PracticeMention[]>([])
   const [error, setError] = useState<string | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
@@ -36,16 +36,23 @@ export function PracticePage() {
     let active = true
     setPractice(null)
     setElements([])
-    setSelection({})
+    setMentions([])
     setError(null)
     getPractice(id)
-      .then(value => { if (active) setPractice(value) })
+      .then(async post => {
+        const [originalElements, linked] = post ? await Promise.all([
+          getElements(id), post.mention_format ? listPracticeMentions(id) : [],
+        ]) : [[], []]
+        if (active) {
+          setPractice(post)
+          setElements(originalElements)
+          setMentions(linked)
+          if (!post) setError('Practice not found.')
+        }
+      })
       .catch(error => {
         if (active) setError(error instanceof Error ? error.message : 'Failed to load practice')
       })
-    getElements(id)
-      .then(value => { if (active) setElements(value) })
-      .catch(() => { if (active) setElements([]) })
     return () => { active = false }
   }, [id])
 
@@ -82,23 +89,14 @@ export function PracticePage() {
     <main className="page">
       <article className="card practice-detail">
         <h1>{practice.title}</h1>
-        <div className="markdown-body">
-          <Markdown remarkPlugins={[remarkGfm]}>{bodyParts.opening}</Markdown>
-        </div>
-        {bodyParts.guided && <PracticeCommands commands={elements.flatMap(element => optionCommands(element.options))} />}
+        {practice.mention_format
+          ? <p className="practice-key-message"><PracticeText text={practice.body} mentions={mentions} /></p>
+          : <div className="markdown-body"><Markdown remarkPlugins={[remarkGfm]}>{bodyParts.opening}</Markdown></div>}
+        {practice.mention_format && <InstallList mentions={mentions} title={practice.title} />}
         {image && <img className="practice-image" src={image} alt="" />}
-        <ElementsReader
-          elements={elements}
-          selection={selection}
-          guidedPractice={bodyParts.guided}
-          onSelect={(elementId, optionId) =>
-            setSelection((prev) => ({ ...prev, [elementId]: optionId }))
-          }
-        />
-        {elements.length > 0 && !bodyParts.guided && (
-          <CompiledPanel elements={elements} selection={selection} />
-        )}
-        {bodyParts.closing && <div className="markdown-body practice-closing">
+        <MentionNotes mentions={mentions} />
+        <LegacyPracticeNotes elements={elements} />
+        {!practice.mention_format && bodyParts.closing && <div className="markdown-body practice-closing">
           <Markdown remarkPlugins={[remarkGfm]}>{bodyParts.closing}</Markdown>
         </div>}
         <p className="muted practice-meta">

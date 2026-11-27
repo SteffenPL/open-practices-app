@@ -183,3 +183,27 @@ body { min-width: 320px; min-height: 100vh; margin: 0; }
 .command-feedback { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
 .practice-detail .practice-closing, .chat-preview article footer.chat-preview-field, .chat-summary-ending { border-top: 1px solid var(--app-rule); padding-top: 1rem; margin-top: 1rem; }
 .practice-detail .elements-reader { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--app-rule); }
+
+.practice-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.practice-mention, .practice-note a { color: var(--app-accent); font-weight: 620; text-decoration: underline; text-underline-offset: .17em; }
+.practice-quote { border-inline-start: 2px solid var(--app-accent); padding-inline-start: .35em; font-style: italic; }
+.practice-setup-notes { display: grid; gap: .65rem; border-top: 1px solid var(--app-rule); padding-top: 1.15rem; }
+.practice-note { display: grid; gap: .35rem; padding: .65rem 0; }
+.practice-note pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.practice-detail .timeline-cli { margin: .25rem 0; }
+.mention-composer { width: min(100%, 52rem); }
+.mention-composer fieldset { display: grid; gap: .55rem; min-width: 0; border: 0; padding: 0; margin: 0; }
+.mention-composer label, .mention-composer summary { font-weight: 650; }
+.mention-composer summary { cursor: pointer; }
+.mention-composer textarea { width: 100%; resize: vertical; }
+.mention-composer details { padding: .6rem 0; border-top: 1px solid var(--app-rule); }
+.mention-composer details label { display: block; margin: .55rem 0 .25rem; }
+.mention-input-wrap { position: relative; }
+.mention-menu { position: absolute; z-index: 5; top: 100%; width: 100%; max-height: 15rem; overflow: auto; border: 1px solid var(--app-rule); border-radius: .35rem; background: var(--app-surface); }
+.mention-menu button { display: block; text-align: left; width: 100%; border: 0; padding: .5rem; }
+.mention-menu button[aria-selected=true], .mention-menu button:hover { background: var(--app-paper); }
+.mention-menu span { color: var(--app-muted); }
+.composer-actions { display: flex; align-items: center; gap: 1rem; }
+
+.catalog-command-choice { display: flex; flex-wrap: wrap; align-items: baseline; gap: .55rem; margin-bottom: .65rem; }
+.catalog-command-choice code { white-space: pre-wrap; overflow-wrap: anywhere; }

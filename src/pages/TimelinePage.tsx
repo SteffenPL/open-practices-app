@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { listPractices } from '../lib/practiceService'
 import type { Practice } from '../lib/types'
 import { TimelineFeed } from './TimelineFeed'
-import { getPracticeFeedDetails, type FeedDetails } from '../lib/elementService'
+import { listLegacyFeedTools, type PracticeToolLink } from '../lib/elementService'
+import { listFeedMentions, type PracticeMention } from '../lib/mentionService'
 
 const PAGE_SIZE = 10
 
@@ -12,22 +13,27 @@ export function TimelinePage({ searchQuery }: { searchQuery: string }) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [more, setMore] = useState(false)
-  const [details, setDetails] = useState<Record<string, FeedDetails>>({})
+  const [tools, setTools] = useState<Record<string, PracticeToolLink[]>>({})
+  const [mentions, setMentions] = useState<Record<string, PracticeMention[]>>({})
 
   const load = useCallback(async (from: number, replace: boolean) => {
     if (replace) setLoading(true)
     else setLoadingMore(true)
     try {
       const page = await listPractices(from, PAGE_SIZE)
-      setPractices((previous) => (replace ? page : [...previous, ...page]))
+      const [pageMentions, oldTools] = await Promise.all([
+        listFeedMentions(page.filter(post => post.mention_format).map(post => post.id)),
+        listLegacyFeedTools(page.filter(post => !post.mention_format).map(post => post.id)),
+      ])
+      const pageTools = { ...oldTools }
+      for (const [id, linked] of Object.entries(pageMentions)) {
+        pageTools[id] = [...new Map(linked.map(mention => [mention.tool.id, mention.tool])).values()]
+      }
+      setTools(previous => replace ? pageTools : { ...previous, ...pageTools })
+      setMentions(previous => replace ? pageMentions : { ...previous, ...pageMentions })
+      setPractices(previous => replace ? page : [...previous, ...page])
       setMore(page.length === PAGE_SIZE)
       setError(null)
-      try {
-        const pageDetails = await getPracticeFeedDetails(page.map((practice) => practice.id))
-        setDetails((previous) => replace ? pageDetails : { ...previous, ...pageDetails })
-      } catch {
-        // Skill labels are supplementary; a tag lookup should not block the feed.
-      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not load practices.')
     } finally {
@@ -43,7 +49,8 @@ export function TimelinePage({ searchQuery }: { searchQuery: string }) {
   return (
     <TimelineFeed
       practices={practices}
-      details={details}
+      tools={tools}
+      mentions={mentions}
       searchQuery={searchQuery}
       loading={loading}
       loadingMore={loadingMore}

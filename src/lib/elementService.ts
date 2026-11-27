@@ -1,4 +1,3 @@
-import { optionCommands, type PracticeCommand } from '../pages/guidedPracticeContent'
 import { supabase } from './supabase'
 import type { Element } from './types'
 
@@ -52,33 +51,24 @@ export async function getElements(practiceId: string): Promise<Element[]> {
   return elements
 }
 
-export interface PracticeSkillTag {
-  name: string
-  packageId: string
-}
+export type PracticeToolLink = { id: string; name: string; slug: string }
 
-export type FeedDetails = { tags: PracticeSkillTag[]; commands: PracticeCommand[] }
-
-export async function getPracticeFeedDetails(practiceIds: string[]): Promise<Record<string, FeedDetails>> {
+export async function listLegacyFeedTools(practiceIds: string[]): Promise<Record<string, PracticeToolLink[]>> {
   if (!supabase || !practiceIds.length) return {}
   const { data, error } = await supabase
     .from('elements')
-    .select('practice_id, position, options(name, description, position, tool:tools(apm_id))')
+    .select('practice_id, options(tool:tools(*))')
     .in('practice_id', practiceIds)
     .order('position')
   if (error) throw error
 
-  const byPractice: Record<string, FeedDetails> = {}
+  const byPractice: Record<string, PracticeToolLink[]> = {}
   for (const element of data ?? []) {
-    const details = byPractice[element.practice_id] ??= { tags: [], commands: [] }
-    const options = element.options.sort((a, b) => a.position - b.position)
-    details.commands.push(...optionCommands(options))
-    for (const option of options) {
+    const links = byPractice[element.practice_id] ??= []
+    for (const option of element.options) {
       const tool = Array.isArray(option.tool) ? option.tool[0] : option.tool
-      const packageId = tool?.apm_id
-      const name = option.name.trim()
-      if (packageId && name && !details.tags.some(tag => tag.name.toLowerCase() === name.toLowerCase())) {
-        details.tags.push({ name, packageId })
+      if (tool && !links.some(link => link.id === tool.id)) {
+        links.push({ id: tool.id, name: tool.name, slug: tool.slug ?? tool.name })
       }
     }
   }
