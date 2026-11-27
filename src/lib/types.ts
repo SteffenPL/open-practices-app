@@ -35,6 +35,7 @@ export interface Element {
 }
 
 export interface Practice {
+  mention_format?: boolean
   id: string
   author_id: string
   title: string

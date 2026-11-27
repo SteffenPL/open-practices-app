@@ -1,38 +1,29 @@
 import { supabase } from './supabase'
 import type { Tool } from './types'
 
-/** Identifiers must not be able to alter PostgREST filter syntax. */
-const SAFE_IDENTIFIER = /^[\w@.-]+\/[\w@.-]+$/
-
-/**
- * Normalize what the author typed into a canonical identifier:
- * "owner/repo" is used as-is; a GitHub URL becomes "owner/repo";
- * anything else (e.g. an npm-style id) is kept if it is filter-safe.
- */
+/** Repository owner and name ignore case; package subpaths are case-sensitive. */
 export function normalizeToolIdentifier(input: string): string {
-  const trimmed = input.trim().replace(/\/+$/, '')
-  const urlMatch = trimmed.match(
-    /^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)/,
-  )
-  if (urlMatch) return `${urlMatch[1]}/${urlMatch[2]}`
-  if (!SAFE_IDENTIFIER.test(trimmed)) {
-    throw new Error(`Invalid tool identifier: "${trimmed}"`)
+  const raw = input.trim().replace(/\/+$/, '')
+  const github = raw.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)(?:\/(?:tree|blob)\/[^/]+\/(.+))?$/i)
+  const identifier = github
+    ? [github[1], github[2].replace(/\.git$/i, ''), github[3]].filter(Boolean).join('/')
+    : raw
+  const parts = identifier.split('/')
+  if (parts.length < 2 || parts.some(part => !/^[\w@.-]+$/.test(part) || part === '.' || part === '..')) {
+    throw new Error(`Invalid tool identifier: "${input}"`)
   }
-  return trimmed
+  return [parts[0].toLowerCase(), parts[1].toLowerCase(), ...parts.slice(2)].join('/')
 }
 
-async function findTool(identifier: string, repoUrl: string | null): Promise<Tool | null> {
+async function findTool(identifier: string): Promise<Tool | null> {
   if (!supabase) return null
-  const filter = repoUrl
-    ? `apm_id.eq.${identifier},repo_url.eq.${repoUrl}`
-    : `apm_id.eq.${identifier}`
-  const { data, error } = await supabase
-    .from('tools')
-    .select('*')
-    .or(filter)
-    .maybeSingle()
+  // A repository may contain multiple APM packages; match only the package itself.
+  const { data, error } = await supabase.from('tools').select('*').eq('apm_id', identifier).maybeSingle()
   if (error) throw error
-  return (data as Tool) ?? null
+  if (!data?.merged_into) return data as Tool | null
+  const canonical = await supabase.from('tools').select('*').eq('id', data.merged_into).single()
+  if (canonical.error) throw canonical.error
+  return canonical.data as Tool
 }
 
 /**
@@ -45,14 +36,17 @@ export async function provisionTool(identifier: string): Promise<Tool> {
   if (!supabase) throw new Error('Supabase is not configured')
   const id = normalizeToolIdentifier(identifier)
 
-  const existing = await findTool(id, `https://github.com/${id}`)
+  const existing = await findTool(id)
   if (existing) return existing
 
-  let name = id
+  const [owner, repository, ...path] = id.split('/')
+  const repo = `${owner}/${repository}`
+  const repoUrl = `https://github.com/${repo}${path.length ? '/tree/HEAD/' + path.join('/') : ''}`
+  let name = path.at(-1) || id
   let description: string | null = null
   try {
-    const res = await fetch(`https://api.github.com/repos/${id}`)
-    if (res.ok) {
+    const res = path.length ? null : await fetch(`https://api.github.com/repos/${repo}`)
+    if (res?.ok) {
       const repo = (await res.json()) as { name?: string; description?: string }
       if (repo.name) name = repo.name
       if (repo.description) description = repo.description
@@ -63,14 +57,14 @@ export async function provisionTool(identifier: string): Promise<Tool> {
 
   const { data, error } = await supabase
     .from('tools')
-    .insert({ apm_id: id, repo_url: `https://github.com/${id}`, name, description })
+    .insert({ apm_id: id, repo_url: repoUrl, name, description })
     .select()
     .single()
   if (error) {
     // Lost a race against another author provisioning the same tool:
     // fall back to the row that won.
     if (error.code === '23505') {
-      const raced = await findTool(id, `https://github.com/${id}`)
+      const raced = await findTool(id)
       if (raced) return raced
     }
     throw error
