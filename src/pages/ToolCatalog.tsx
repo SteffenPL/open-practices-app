@@ -16,12 +16,12 @@ function ToolLink({ tool }: { tool: CatalogTool }) {
   return <Link to={`/tools/${tool.id}`} className="tool-row">
     <strong>{tool.name}</strong>
     {tool.description && <p>{tool.description}</p>}
-    <small>{tool.apm_id || tool.repo_url || tool.website_url}</small>
+    {(tool.apm_id || tool.repo_url || tool.website_url) && <small>{tool.apm_id || tool.repo_url || tool.website_url}</small>}
   </Link>
 }
 
 function Frame({children}: {children: ReactNode}) {
-  return <main className="page tool-page"><section className="card">{children}</section></main>
+  return <main className="page tool-page"><section className="tool-sheet">{children}</section></main>
 }
 
 export function CatalogPage() {
@@ -40,7 +40,7 @@ export function CatalogPage() {
 
   return <Frame><Link className="tool-back" to="/">← Practices</Link>
     <div className="tool-heading"><h1>Tool catalog</h1><Link className="primary-as-link" to="/tools/new">New tool</Link></div>
-    <label className="tool-search">Search the catalog<input type="search" value={query} placeholder="Name or package identifier" onChange={e => setQuery(e.target.value)}/></label>
+    <label className="tool-search tool-catalog-search"><span>Search the catalog</span><input type="search" value={query} placeholder="Name or package identifier" onChange={e => setQuery(e.target.value)}/></label>
     {error ? <p role="alert">{error} <button onClick={() => setRetry(retry + 1)}>Retry</button></p>
       : rows === null ? <p role="status">Loading tools…</p>
       : rows.length ? <div className="tool-list">{rows.map(tool => <ToolLink key={tool.id} tool={tool}/>)}</div>
@@ -131,7 +131,7 @@ export function ToolPage() {
     }}/></> : <>
       <div className="tool-heading"><h1>{tool.name}</h1>{!tool.merged_into && <button onClick={() => setEditing(true)}>Edit tool</button>}</div>
       {tool.merged_into && <p>This entry was merged. <Link to={`/tools/${tool.merged_into}`}>Open the surviving tool</Link></p>}
-      {tool.description && <p>{tool.description}</p>}
+      {tool.description && <p className="tool-intro">{tool.description}</p>}
       {tool.apm_id && <p className="tool-package-id"><code>{tool.apm_id}</code></p>}
       <div className="tool-actions">{tool.repo_url && <a href={tool.repo_url} target="_blank" rel="noreferrer">Source ↗</a>}
         {tool.website_url && <a href={tool.website_url} target="_blank" rel="noreferrer">Website ↗</a>}</div>

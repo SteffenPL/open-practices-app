@@ -1,4 +1,3 @@
-.tool-page .card { gap: 1.15rem; }
 .tool-page, .tool-editor { overflow-wrap: anywhere; }
 .tool-back, .tool-actions a { color: var(--app-accent); font-size: .85rem; }
 .tool-heading, .tool-actions, .tool-install { display:flex; flex-wrap:wrap; align-items:center; gap:.65rem; }
@@ -23,3 +22,64 @@
 .tool-history ins, .tool-history del { display:block; white-space:pre-wrap; }
 .tool-matches h3 { margin:.2rem 0 .6rem; }
 .tool-merge-confirm { background:var(--app-paper); border-radius:8px; padding:.8rem; }
+
+.tool-page { max-width: 860px; padding-top: clamp(1.3rem, 4vw, 3rem); }
+.tool-sheet {
+  display: flex; flex-direction: column; gap: 1.35rem; min-width: 0;
+  padding: clamp(1.15rem, 5vw, 3.1rem); border: 1px solid var(--app-rule); border-radius: 14px;
+  background: var(--app-surface);
+}
+.tool-sheet > .tool-back { width: fit-content; text-decoration: none; }
+.tool-back:hover { text-decoration: underline; }
+.tool-sheet .tool-heading h1 {
+  font: 500 clamp(2rem, 5vw, 3.2rem)/1.1 Georgia, 'Times New Roman', serif;
+  letter-spacing: -.045em;
+}
+.tool-sheet > h1 { font-size: 1.15rem; }
+.tool-heading { gap: 1rem; }
+.tool-catalog-search { gap: .4rem; }
+.tool-catalog-search span, .tool-writing label > span { font-weight: 650; }
+.tool-intro { max-width: 65ch; font-size: 1.08rem; }
+.tool-list .tool-row { padding: 1.15rem 0; gap: .35rem; }
+.tool-row strong { font-size: 1.05rem; letter-spacing: -.02em; }
+.tool-row small { color: var(--app-accent); font: .75rem/1.5 ui-monospace, monospace; }
+.tool-editor { gap: 1.35rem; }
+.tool-writing { display: grid; gap: 1.3rem; min-width: 0; }
+.tool-writing label { gap: .45rem; }
+.tool-editor .tool-title-field input:not([type='radio']):not([type='checkbox']):not([type='file']),
+.tool-editor .tool-description-field textarea {
+  border: 0; border-radius: 0; padding: .1rem 0; min-height: 0; background: transparent;
+}
+.tool-editor .tool-title-field input:not([type='radio']):not([type='checkbox']):not([type='file']) {
+  font: 500 clamp(1.85rem, 5vw, 2.8rem)/1.2 Georgia, 'Times New Roman', serif;
+  letter-spacing: -.04em;
+}
+.tool-editor .tool-description-field textarea { font-size: 1rem; line-height: 1.65; resize: vertical; }
+.tool-writing :is(input, textarea)::placeholder { color: var(--app-muted); opacity: .85; }
+.tool-disclosures { border-bottom: 1px solid var(--app-rule); }
+.tool-disclosure { border-top: 1px solid var(--app-rule); }
+.tool-disclosure > summary {
+  display: flex; justify-content: space-between; align-items: center; gap: .75rem;
+  padding: .85rem 0; cursor: pointer; list-style: none; font-size: .92rem; font-weight: 650;
+}
+.tool-disclosure > summary::-webkit-details-marker { display: none; }
+.tool-disclosure > summary::after {
+  content: ''; width: .5rem; height: .5rem; margin-right: .35rem;
+  border: solid var(--app-muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
+}
+.tool-disclosure[open] > summary::after { transform: rotate(225deg); }
+.tool-disclosure-content { display: grid; gap: .85rem; padding: .15rem 0 1.15rem; }
+.tool-disclosure-content .tool-command-field { font: .85rem/1.6 ui-monospace, monospace; }
+.tool-save-actions { justify-content: flex-end; }
+.tool-signin { gap: 1rem; }
+.tool-matches { padding: 1rem; background: var(--app-paper); }
+.tool-match { gap: .55rem; }
+.tool-merge-confirm { border-left: 2px solid var(--app-accent); }
+.tool-merge-confirm > button { justify-self: start; }
+.tool-history summary, .tool-page details.tool-section > summary { min-height: 2.5rem; align-content: center; }
+@media (max-width: 540px) {
+  .tool-page { padding: .8rem .5rem 2rem; }
+  .tool-sheet { padding: 1.05rem; gap: 1rem; border-radius: 10px; }
+  .tool-heading { align-items: baseline; }
+  .tool-list .tool-row { padding: .9rem 0; }
+}

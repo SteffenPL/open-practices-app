@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { createTool, listTools, mergeTools, updateTool, type CatalogTool, type ToolInput } from '../lib/catalogService'
 import { catalogMatches, exactPackageMatch, toolFields, type ToolDraft } from '../lib/toolMatching'
@@ -23,6 +23,8 @@ export function ToolEditor({ tool, initialName = '', onSaved, onCancel }: Props)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [lookupStatus, setLookupStatus] = useState('')
+  const matchHeading = useRef<HTMLHeadingElement>(null)
+  useEffect(() => { if (matches) matchHeading.current?.focus() }, [matches])
   useEffect(() => { setMatches(null); setMerge(null); setError('') }, [draft])
 
   function mergedDraft(target: CatalogTool): ToolInput {
@@ -63,17 +65,45 @@ export function ToolEditor({ tool, initialName = '', onSaved, onCancel }: Props)
 
   function submit(event: FormEvent) { event.preventDefault(); void save('check') }
   if (loading) return <p role="status">Checking sign-in…</p>
-  if (!session) return <div className="tool-editor"><p>Sign in to contribute to the tool catalog.</p><button type="button" onClick={() => void signInWithGoogle()}>Sign in with Google</button><button type="button" onClick={onCancel}>Cancel</button></div>
-  return <form className="tool-editor" onSubmit={submit}>
-    {toolFields.map(([field, label]) => <label key={field}>{label}
-      {field === 'description'
-        ? <textarea value={draft[field]} maxLength={4000} onChange={e => setDraft({ ...draft, [field]: e.target.value })}/>
-        : <input type={field.endsWith('_url') ? 'url' : 'text'} required={field === 'name'} value={draft[field]} onChange={e => setDraft({ ...draft, [field]: e.target.value })} placeholder={field === 'apm_id' ? 'owner/repository/path/to/skill' : undefined}/>}
-    </label>)}
-    <div className="tool-actions"><button type="button" disabled={busy || !(draft.apm_id.trim() || draft.repo_url.trim())} onClick={() => void lookup()}>Look up source details</button></div>
-    {lookupStatus && <p role="status" className="muted">{lookupStatus}</p>}
+  if (!session) return <div className="tool-editor tool-signin"><p>Sign in to contribute to the tool catalog.</p><div className="tool-actions"><button className="primary" type="button" onClick={() => void signInWithGoogle()}>Sign in with Google</button><button type="button" onClick={onCancel}>Cancel</button></div></div>
+
+  function change(field: keyof ToolDraft, value: string) {
+    setLookupStatus('')
+    setDraft(previous => ({ ...previous, [field]: value }))
+  }
+
+  return <form className="tool-editor" onSubmit={submit} onInvalid={event => {
+    const disclosure = (event.target as HTMLElement).closest('details')
+    if (disclosure) disclosure.open = true
+  }}>
+    <div className="tool-writing">
+      <label className="tool-title-field"><span>Tool name</span>
+        <input type="text" placeholder="Name your tool" required maxLength={160} value={draft.name} onChange={e => change('name', e.target.value)}/>
+      </label>
+      <label className="tool-description-field"><span>Description</span>
+        <textarea rows={3} placeholder="What does this tool help people do?" maxLength={12000} value={draft.description} onChange={e => change('description', e.target.value)}/>
+      </label>
+    </div>
+    <div className="tool-disclosures">
+      <details className="tool-disclosure">
+        <summary>Sources and links</summary>
+        <div className="tool-disclosure-content">
+          <label>APM package identifier<input placeholder="owner/repository/path/to/skill" value={draft.apm_id} onChange={e => change('apm_id', e.target.value)}/></label>
+          <label>Source repository or package URL<input type="url" placeholder="https://github.com/…" value={draft.repo_url} onChange={e => change('repo_url', e.target.value)}/></label>
+          <div className="tool-actions"><button type="button" disabled={busy || !(draft.apm_id.trim() || draft.repo_url.trim())} onClick={() => void lookup()}>Look up source details</button></div>
+          {lookupStatus && <p role="status" className="muted">{lookupStatus}</p>}
+          <label>Website<input type="url" placeholder="https://" value={draft.website_url} onChange={e => change('website_url', e.target.value)}/></label>
+        </div>
+      </details>
+      <details className="tool-disclosure">
+        <summary>Install command</summary>
+        <div className="tool-disclosure-content">
+          <label>Install command<textarea rows={2} className="tool-command-field" placeholder="apm install owner/repository" value={draft.install_command} onChange={e => change('install_command', e.target.value)}/></label>
+        </div>
+      </details>
+    </div>
     {matches && <section className="tool-matches" aria-label="Possible duplicate tools">
-      <h3>Possible duplicates</h3>
+      <h3 ref={matchHeading} tabIndex={-1}>Possible duplicates</h3>
       {matches.map(candidate => <div key={candidate.id} className="tool-match">
         <strong>{candidate.name}</strong><small>{candidate.apm_id || candidate.repo_url || candidate.website_url}</small>
         <div className="tool-actions"><button type="button" disabled={busy} onClick={() => onSaved(candidate)}>Use existing</button>
@@ -87,7 +117,7 @@ export function ToolEditor({ tool, initialName = '', onSaved, onCancel }: Props)
       <button type="button" disabled={busy} onClick={() => void save('separate')}>Keep separate</button>}
     </section>}
     {error && <p role="alert" className="error">{error}</p>}
-    <div className="tool-actions">{!matches && <button className="primary" disabled={busy} type="submit">{busy ? 'Saving…' : tool ? 'Save changes' : 'Create tool'}</button>}
+    <div className="tool-actions tool-save-actions">{!matches && <button className="primary" disabled={busy} type="submit">{busy ? 'Saving…' : tool ? 'Save changes' : 'Create tool'}</button>}
       <button type="button" onClick={onCancel} disabled={busy}>Cancel</button></div>
   </form>
 }

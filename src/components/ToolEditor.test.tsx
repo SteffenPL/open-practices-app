@@ -11,10 +11,22 @@ beforeEach(() => { vi.mocked(listTools).mockResolvedValue([existing]) })
 afterEach(() => { cleanup(); vi.resetAllMocks() })
 
 describe('shared tool editor', () => {
+  it('can save a short entry with both optional sections collapsed', async () => {
+    vi.mocked(createTool).mockResolvedValue(existing)
+    render(<ToolEditor onSaved={vi.fn()} onCancel={vi.fn()}/>)
+    fill('Tool name', 'Notebook')
+    fill('Description', 'A place to keep lab notes.')
+    expect(screen.getByLabelText('APM package identifier').closest('details')?.open).toBe(false)
+    expect(screen.getByLabelText('Install command').closest('details')?.open).toBe(false)
+    fireEvent.click(screen.getByRole('button', {name:'Create tool'}))
+    await waitFor(() => expect(createTool).toHaveBeenCalledWith(expect.objectContaining({name:'Notebook',description:'A place to keep lab notes.',install_command:''})))
+  })
+
   it('resolves an exact package alias to the surviving entry without saving a duplicate', async () => {
     vi.mocked(listTools).mockResolvedValue([{...existing, aliases:[{...existing, id:'old', apm_id:'sample/older/Tools/Pdf'}]}])
     const done=vi.fn()
     render(<ToolEditor onSaved={done} onCancel={vi.fn()} initialName="Another name"/>)
+    fireEvent.click(screen.getByText('Sources and links'))
     fill('APM package identifier','Sample/OLDER/Tools/Pdf')
     fireEvent.click(screen.getByRole('button',{name:'Create tool'}))
     fireEvent.click(await screen.findByRole('button',{name:'Use existing'}))
@@ -25,6 +37,7 @@ describe('shared tool editor', () => {
   it('keeps separate packages in the same repository, preserving case-sensitive paths', async () => {
     vi.mocked(createTool).mockResolvedValue({...existing,id:'second'})
     render(<ToolEditor onSaved={vi.fn()} onCancel={vi.fn()} initialName="PDF"/>)
+    fireEvent.click(screen.getByText('Sources and links'))
     fill('APM package identifier','example/skills/Tools/pdf')
     fill('Source repository or package URL','https://github.com/example/skills')
     fireEvent.click(screen.getByRole('button',{name:'Create tool'}))
