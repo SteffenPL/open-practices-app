@@ -19,7 +19,7 @@
 .timeline-shell { max-width: 984px; margin: clamp(1.4rem, 4vw, 3rem) auto 0; }
 .feed-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding-bottom: 1.2rem; border-bottom: 1px solid var(--timeline-rule); }
 .feed-views, .practice-compose-nav { display: flex; align-items: baseline; gap: 1.2rem; }
-.feed-views h1 { font-size: clamp(1.75rem, 3.4vw, 2.65rem); line-height: 1.06; letter-spacing: -.055em; }
+.feed-views h1 { font: 500 clamp(2rem, 3.4vw, 2.8rem)/1.06 Georgia, serif; letter-spacing: -.055em; }
 .feed-views a { color: var(--timeline-muted); font-size: 1rem; font-weight: 550; }
 .feed-views a:hover, .practice-compose-nav a:hover { text-decoration: underline; text-underline-offset: .22em; }
 .practice-compose-nav { align-items: center; gap: .35rem; }
