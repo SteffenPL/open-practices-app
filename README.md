@@ -19,6 +19,14 @@ Use `#mattpocock/skills::grill-me` to cite a command from an entire package. Mul
 
 Choose **New tool** to contribute a catalog entry directly. Contributors can maintain commands, aliases, and ordered URLs in the web catalog. The first URL is the primary link. A tool can have an APM package identifier, a source link, a project website, and a default install command with optional Windows, macOS, and Linux variants. The tool page shows its edit history. Generated blocks follow the catalog. A manually customized block stays as its author wrote it.
 
+## Manage your own skills repository
+
+Open [My skills](https://steffenpl-share.exe.xyz/open-practices/#/my-skills), enter a repository as `owner/repository`, and select catalog packages or write a skill. **Save collection** saves a private draft in your Open Practices account. Only you can read it there.
+
+For a new GitHub repository, choose its visibility on GitHub and initialize it with a README so it has a branch. Download the repository files, or open the GitHub editor to review and commit each generated file on your chosen branch. The source archive keeps `apm.yml` and the `.apm/skills/<name>/SKILL.md` directory structure together. For an existing collection, load its current manifest from public GitHub or a local file and review the additive merge before committing. Existing dependency pins, skill filters, and unrelated settings stay intact.
+
+Once the files are on the default branch, run `apm install owner/repository` in a consuming project. Each installer needs GitHub read access to a private repository and to any private dependencies. Publishing and repository permissions stay under the user's GitHub account.
+
 ## Local development
 
 ```sh

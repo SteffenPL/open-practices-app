@@ -9,6 +9,8 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { AuthContext } from './auth-context'
 
+const returnKey = 'open-practices-return-after-login'
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
@@ -33,9 +35,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    if (!session) return
+    try {
+      const target = sessionStorage.getItem(returnKey)
+      sessionStorage.removeItem(returnKey)
+      if (target?.startsWith('#/') && ['', '#', '#/'].includes(window.location.hash)) window.location.hash = target
+    } catch { /* Login also works when session storage is disabled. */ }
+  }, [session])
+
   const signInWithGoogle = useCallback(async () => {
     if (!supabase) return
     const redirectTo = window.location.origin + import.meta.env.BASE_URL
+    try {
+      if (window.location.hash.startsWith('#/')) sessionStorage.setItem(returnKey, window.location.hash)
+      else sessionStorage.removeItem(returnKey)
+    } catch { /* The OAuth redirect still returns to the feed. */ }
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },
