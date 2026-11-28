@@ -154,7 +154,7 @@ function SkillsEditor() {
         <label>GitHub branch<input value={branch} onChange={e => setBranch(e.target.value)} placeholder="main"/></label>
         {bundle.files.map(file => <FilePreview key={file.path} file={file} repo={config.repo} branch={branch}/>)}
         <button type="button" onClick={() => downloadRepositoryArchive(config.repo,bundle.files)}>Download repository files (.zip)</button>
-        <ExistingManifest repository={config.repo} packages={config.selected_packages}/>
+        <ExistingManifest repository={config.repo} packages={config.selected_packages} branch={branch}/>
         <h3>Install after committing</h3><div className="skills-install"><code>apm install {config.repo}</code><CopyCommandButton text={'apm install '+config.repo} label="Copy install command"/></div>
       </section>}
     </fieldset>}
