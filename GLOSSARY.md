@@ -14,7 +14,7 @@ A shared catalog entry for a tool people use in their Practices. Its identifiers
 An inline reference such as `#tool-name` connecting the text of a Practice to a Tool.
 
 **Install List**:
-The CLI commands an author chooses to include for the Tools mentioned in a Practice.
+A copyable block generated from the mentioned Tools in order of first appearance for the reader’s operating system. An author can replace the block for any one operating system.
 
 **Practice Definition**:
 The Markdown format for exchanging a Practice through repository Import, Sync, and the agent API.
