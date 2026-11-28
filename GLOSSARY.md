@@ -5,13 +5,13 @@ A community platform where people publish working practices and maintain a share
 ## Language
 
 **Practice**:
-A published title and key message describing how someone works. The author can mention Tools and include install commands and setup notes.
+A published title and key message describing how someone works. The author can mention Tools and customize the generated install script.
 
 **Tool**:
-A shared catalog entry for a tool people use in their Practices. Its identifiers can include an APM package, a GitHub link, and a project website.
+A shared catalog entry for a tool people use in their Practices. Its identity includes a name, optional aliases and package handle, and ordered links. The first URL is primary. A tool can list commands that a Practice uses.
 
 **Tool Mention**:
-An inline reference such as `#tool-name` connecting the text of a Practice to a Tool.
+An inline reference such as `#tool-name` or `#owner/package::command` connecting the text of a Practice to a Tool or one of its commands.
 
 **Install List**:
 A copyable block generated from the mentioned Tools in order of first appearance for the reader’s operating system. An author can replace the block for any one operating system.
@@ -29,5 +29,4 @@ Manually re-pulling a Practice's definition from its source, overwriting the pla
 _Avoid_: Webhook, auto-sync
 
 **Agent Access**:
-A short-lived copy of the user's current session token, deliberately granted to an AI agent for a single working window (~1 hour). Full account scope; expires on its own.
-_Avoid_: Agent token, API key, password
+A short-lived, revocable credential permitting specific Open Practices API operations on behalf of a signed-in contributor.

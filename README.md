@@ -15,7 +15,9 @@ Choose **New practice** and write a title and key message. For example:
 
 Select a tool from the suggestions after typing `#`, or create it there. Mentioned tools supply the copyable install block in order of first appearance. Windows, macOS, and Linux appear below each install block. Selecting one remembers your choice in this browser. The feed previews up to three lines. Choose **Read more** to see the full script or **Copy** to copy it directly. Authors can customize the entire block for one operating system and restore the generated version later. Text between backticks is code. Text between paired double quotes is a prompt.
 
-Choose **New tool** to contribute a catalog entry directly. A tool can have an APM package identifier, a source link, a project website, and a default install command with optional Windows, macOS, and Linux variants. The tool page shows its edit history. Generated blocks follow the catalog. A manually customized block stays as its author wrote it.
+Use `#mattpocock/skills::grill-me` to cite a command from an entire package. Multiple references to the package contribute one install command. Hover or focus a reference to see its tool name and primary URL.
+
+Choose **New tool** to contribute a catalog entry directly. Contributors can maintain commands, aliases, and ordered URLs in the web catalog. The first URL is the primary link. A tool can have an APM package identifier, a source link, a project website, and a default install command with optional Windows, macOS, and Linux variants. The tool page shows its edit history. Generated blocks follow the catalog. A manually customized block stays as its author wrote it.
 
 ## Local development
 
@@ -56,38 +58,9 @@ npm run dev
 
 ## Agent API
 
-AI agents can create, read, and update a user's Practices by submitting a
-[Practice Definition](./docs/practice-definition.md) in Markdown.
+The [Agents page](https://steffenpl-share.exe.xyz/open-practices/#/agents) has copyable prompts and instructions for granting access. A signed-in contributor chooses permissions and generates a short-lived token. Store it in the agent’s environment and use it as a bearer token when calling the Open Practices API. The prompts contain no credentials.
 
-**How a user grants access**: on their profile page, they click
-*Agent access (expires after 1h)* — this copies the current session token.
-Hand that token to the agent; it is valid for about one hour and grants the
-agent the user's full powers for that window (see
-[ADR 0001](https://github.com/SteffenPL/open-practices/blob/main/docs/adr/0001-agent-access-via-session-grants.md)).
-
-**The three calls** (base URL:
-`https://fpivzqmhksvaywxlektw.supabase.co/functions/v1/agent`,
-header `Authorization: Bearer <token>`):
-
-```sh
-# Create a practice from a definition
-curl -X POST "$BASE/practices" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"definition": "---\ntitle: Review a change locally\n---\n\nUse a separate working directory to compare the proposed change with the original."}'
-# -> { "id": "…", "url": "https://steffenpl-share.exe.xyz/open-practices/#/practice/…" }
-
-# Read a practice back as a definition
-curl "$BASE/practices/<id>" -H "Authorization: Bearer $TOKEN"
-# -> { "id": "…", "url": "…", "definition": "---\ntitle: …" }
-
-# Update a practice (significant=false by default: silent, no timeline bump)
-curl -X PATCH "$BASE/practices/<id>" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"definition": "…", "significant": true}'
-```
-
-Only the token owner's practices are writable. No delete, no comments on
-this path.
+The API at `https://fpivzqmhksvaywxlektw.supabase.co/functions/v1/agent` serves catalog tools and [practice definitions](./docs/practice-definition.md). A read-only grant can inspect content. A grant with the corresponding write permission can contribute catalog changes or publish and edit the account’s own practices. Grants expire within 15 minutes and can be revoked early.
 
 ## Repository import
 
