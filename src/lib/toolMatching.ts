@@ -19,7 +19,9 @@ export type ToolDraft = Record<ToolField, string>
 const key = (s: string | null | undefined) => (s || '').trim().toLowerCase().replace(/\/+$/, '')
 const words = (s: string) => key(s).replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
 
-type Candidate = Pick<CatalogTool, 'name' | 'apm_id' | 'repo_url' | 'website_url'>
+type Identity = ToolDraft & { urls?: string[]; name_aliases?: string[] }
+
+type Candidate = Pick<CatalogTool, 'name' | 'apm_id' | 'repo_url' | 'website_url' | 'name_aliases' | 'urls'>
 
 function packageIdentity(input: string | null) {
   const [owner, repo, ...path] = (input || '').trim().replace(/^\/+|\/+$/g, '').split('/')
@@ -36,9 +38,12 @@ function sameSource(a: string | null, b: string | null) {
   return !!root(a) && root(a) === root(b)
 }
 
-function similar(draft: ToolDraft, candidate: Candidate) {
+function similar(draft: Identity, candidate: Candidate) {
   if (sameSource(draft.repo_url, candidate.repo_url)) return true
   if (key(draft.website_url) && key(draft.website_url) === key(candidate.website_url)) return true
+  if (draft.urls?.some(url => candidate.urls?.some(other => key(other) === key(url)))) return true
+  const names = [candidate.name, ...(candidate.name_aliases ?? [])].map(words)
+  if ([draft.name, ...(draft.name_aliases ?? [])].some(value => names.includes(words(value)))) return true
   const name = words(draft.name)
   const other = words(candidate.name)
   if (!name || !other) return false
@@ -47,7 +52,7 @@ function similar(draft: ToolDraft, candidate: Candidate) {
   return other.split(' ').some(s => tokens.has(s))
 }
 
-export function catalogMatches(draft: ToolDraft, tools: CatalogTool[]) {
+export function catalogMatches(draft: Identity, tools: CatalogTool[]) {
   return tools.filter(tool => exactPackageMatch(draft,tool) || [tool,...(tool.aliases || [])].some(candidate => similar(draft,candidate)))
     .sort((a,b) => Number(exactPackageMatch(draft,b)) - Number(exactPackageMatch(draft,a)) || a.name.localeCompare(b.name))
 }

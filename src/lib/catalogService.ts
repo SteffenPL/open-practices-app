@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import type { InstallCommands } from './installCommands'
 import { AUTHOR_SELECT } from './selects'
-import type { Practice, Tool } from './types'
+import type { Practice, Tool, ToolCommand } from './types'
 
 export interface CatalogTool extends Tool {
   slug: string
@@ -10,10 +10,13 @@ export interface CatalogTool extends Tool {
   install_command: string | null
   merged_into: string | null
   updated_at: string
-  aliases?: Pick<CatalogTool, 'id' | 'name' | 'slug' | 'apm_id' | 'repo_url' | 'website_url'>[]
+  aliases?: Pick<CatalogTool, 'id' | 'name' | 'slug' | 'apm_id' | 'repo_url' | 'website_url' | 'name_aliases' | 'urls'>[]
 }
 
 export interface ToolInput {
+  urls?: string[]
+  name_aliases?: string[]
+  commands?: ToolCommand[]
   name: string
   description?: string | null
   apm_id?: string | null
@@ -60,7 +63,7 @@ export async function listTools(query = ''): Promise<CatalogTool[]> {
   const term = query.trim().toLowerCase().replace(/^#/, '')
   if (!term) return [...catalog.values()]
   const ids = new Set(result.filter((tool) =>
-    [tool.name, tool.slug, tool.apm_id, tool.repo_url, tool.website_url, tool.description]
+    [tool.name, tool.slug, tool.apm_id, tool.repo_url, tool.website_url, tool.description, ...(tool.name_aliases ?? []), ...(tool.urls ?? []), ...(tool.commands ?? []).map(command => command.name)]
       .some((value) => value?.toLowerCase().includes(term)),
   ).map((tool) => tool.merged_into ?? tool.id))
   return result.filter((tool) => !tool.merged_into && ids.has(tool.id))
@@ -87,8 +90,8 @@ export async function updateTool(id: string, input: ToolInput, expectedUpdatedAt
   return data as CatalogTool
 }
 
-export async function mergeTools(sourceId: string, targetId: string): Promise<CatalogTool> {
-  const { data, error } = await database().rpc('merge_catalog_tools', { p_source: sourceId, p_target: targetId }).single()
+export async function mergeTools(sourceId: string, targetId: string, sourceUpdatedAt: string, targetUpdatedAt: string): Promise<CatalogTool> {
+  const { data, error } = await database().rpc('merge_catalog_tools', { p_source: sourceId, p_target: targetId, p_source_updated_at: sourceUpdatedAt, p_target_updated_at: targetUpdatedAt }).single()
   if (error) throw error
   return data as CatalogTool
 }

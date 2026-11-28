@@ -22,6 +22,23 @@ describe('shared tool editor', () => {
     await waitFor(() => expect(createTool).toHaveBeenCalledWith(expect.objectContaining({name:'Notebook',description:'A place to keep lab notes.',install_command:''})))
   })
 
+  it('saves the primary URL first, additional URLs in order, aliases, and commands', async () => {
+    vi.mocked(createTool).mockResolvedValue(existing)
+    render(<ToolEditor onSaved={vi.fn()} onCancel={vi.fn()} initialName="Notebook"/>)
+    fill('Primary URL','https://example.org/notebook')
+    fill('Additional URLs, one per line','https://example.org/docs\nhttps://example.org/issues')
+    fill('Aliases, one per line','Lab notes\nNotebook CLI')
+    fireEvent.click(screen.getByText('Commands'))
+    fireEvent.click(screen.getByRole('button',{name:'Add command'}))
+    fill('Command name','/record')
+    fill('Short description','Record an observation.')
+    fireEvent.click(screen.getByRole('button',{name:'Create tool'}))
+    await waitFor(() => expect(createTool).toHaveBeenCalledWith(expect.objectContaining({
+      urls:['https://example.org/notebook','https://example.org/docs','https://example.org/issues'],
+      name_aliases:['Lab notes','Notebook CLI'], commands:[{name:'/record',description:'Record an observation.'}],
+    })))
+  })
+
   it('resolves an exact package alias to the surviving entry without saving a duplicate', async () => {
     vi.mocked(listTools).mockResolvedValue([{...existing, aliases:[{...existing, id:'old', apm_id:'sample/older/Tools/Pdf'}]}])
     const done=vi.fn()
@@ -74,7 +91,7 @@ describe('shared tool editor', () => {
     fireEvent.click(screen.getByRole('button',{name:'Save changes'}))
     fireEvent.click(await screen.findByRole('button',{name:'Merge tools'}))
     fireEvent.click(screen.getByRole('button',{name:'Confirm merge'}))
-    await waitFor(() => expect(mergeTools).toHaveBeenCalledWith('second','first'))
+    await waitFor(() => expect(mergeTools).toHaveBeenCalledWith('second','first',existing.updated_at,existing.updated_at))
     expect(updateTool).not.toHaveBeenCalled()
   })
 })

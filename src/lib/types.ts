@@ -8,7 +8,15 @@ export interface Profile {
 export type InstallPlatform = 'macos' | 'linux' | 'windows'
 export type PlatformCommands = Partial<Record<InstallPlatform, string>>
 
+export interface ToolCommand {
+  name: string
+  description?: string
+}
+
 export interface Tool {
+  urls?: string[]
+  name_aliases?: string[]
+  commands?: ToolCommand[]
   install_commands?: PlatformCommands
   id: string
   apm_id: string | null

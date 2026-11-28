@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { ToolEditor } from '../components/ToolEditor'
 import { InstallOSPicker } from '../components/InstallOSPicker'
@@ -7,6 +7,7 @@ import { toolInstallCommand, useInstallOS } from '../lib/installCommands'
 import { platformFields, toolFields } from '../lib/toolMatching'
 import { CopyCommandButton } from '../components/PracticeCommands'
 import { getTool, listToolHistory, listToolPractices, listTools, mergeTools, type CatalogTool, type ToolRevision } from '../lib/catalogService'
+import { toolURLs, describeCommands } from '../lib/catalogDetails'
 import type { Practice } from '../lib/types'
 import './tool-catalog.css'
 
@@ -27,7 +28,8 @@ function Frame({children}: {children: ReactNode}) {
 }
 
 export function CatalogPage() {
-  const [query, setQuery] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const query = searchParams.get('q') ?? ''
   const [rows, setRows] = useState<CatalogTool[] | null>(null)
   const [error, setError] = useState('')
   const [retry, setRetry] = useState(0)
@@ -42,7 +44,11 @@ export function CatalogPage() {
 
   return <Frame><Link className="tool-back" to="/">← Practices</Link>
     <div className="tool-heading"><h1>Tool catalog</h1><Link className="primary-as-link" to="/tools/new">New tool</Link></div>
-    <label className="tool-search tool-catalog-search"><span>Search the catalog</span><input type="search" value={query} placeholder="Name or package identifier" onChange={e => setQuery(e.target.value)}/></label>
+    <label className="tool-search tool-catalog-search"><span>Search the catalog</span><input type="search" value={query} placeholder="Name or package identifier" onChange={e => setSearchParams(previous => {
+      if (e.target.value) previous.set('q', e.target.value)
+      else previous.delete('q')
+      return previous
+    }, {replace:true})}/></label>
     {error ? <p role="alert">{error} <button onClick={() => setRetry(retry + 1)}>Retry</button></p>
       : rows === null ? <p role="status">Loading tools…</p>
       : rows.length ? <div className="tool-list">{rows.map(tool => <ToolLink key={tool.id} tool={tool}/>)}</div>
@@ -58,7 +64,15 @@ function revisionFields(revision: ToolRevision) {
   const platformChanges = platformFields.map(([os, label]) => ({
     field: os, label: label + ' install command', before: before?.install_commands?.[os] ?? '', after: after?.install_commands?.[os] ?? '',
   })).filter(change => change.before !== change.after)
-  return [...textFields, ...platformChanges]
+  const metadata = (tool: CatalogTool | null) => ({
+    'URLs': (tool?.urls ?? []).join('\n'), 'Aliases': (tool?.name_aliases ?? []).join('\n'),
+    'Commands': describeCommands(tool?.commands ?? []),
+  })
+  const previous = metadata(before)
+  const current = metadata(after)
+  const changes = (Object.keys(current) as (keyof typeof current)[]).filter(key => current[key] !== previous[key])
+    .map(key => ({field:key, label:key, before:previous[key], after:current[key]}))
+  return [...textFields, ...platformChanges, ...changes]
 }
 
 function History({ revisions }: { revisions: ToolRevision[] }) {
@@ -91,7 +105,7 @@ function MergePanel({tool, onMerged}: {tool: CatalogTool; onMerged: (id: string)
   async function merge() {
     if (!target || busy) return
     setBusy(true)
-    try { await mergeTools(tool.id,target.id); onMerged(target.id) }
+    try { await mergeTools(tool.id,target.id,tool.updated_at,target.updated_at); onMerged(target.id) }
     catch(cause) { setError(message(cause)); setBusy(false) }
   }
   return <details className="tool-section"><summary>Merge with another tool</summary>
@@ -141,9 +155,12 @@ export function ToolPage() {
       {tool.merged_into && <p>This entry was merged. <Link to={`/tools/${tool.merged_into}`}>Open the surviving tool</Link></p>}
       {tool.description && <p className="tool-intro">{tool.description}</p>}
       {tool.apm_id && <p className="tool-package-id"><code>{tool.apm_id}</code></p>}
-      <div className="tool-actions">{tool.repo_url && <a href={tool.repo_url} target="_blank" rel="noreferrer">Source ↗</a>}
-        {tool.website_url && <a href={tool.website_url} target="_blank" rel="noreferrer">Website ↗</a>}</div>
+      {Boolean(tool.name_aliases?.length) && <p>Also known as {tool.name_aliases!.join(', ')}</p>}
+      <div className="tool-actions">{toolURLs(tool).map((url, index) => <a key={url} aria-label={(index === 0 ? 'Primary link: ' : '') + url} href={url} target="_blank" rel="noreferrer">{url.replace(/^https?:\/\//i, '').replace(/\/$/, '')} ↗</a>)}</div>
       {(tool.install_command || Object.values(tool.install_commands ?? {}).some(Boolean)) && <section className="tool-section"><h2>Install command</h2><InstallOSPicker />{command ? <div className="tool-install"><pre><code>{command}</code></pre><CopyCommandButton text={command} label="Copy install command"/></div> : <p className="muted">No command listed for this platform.</p>}</section>}
+      {Boolean(tool.commands?.length) && <details className="tool-section"><summary>Commands ({tool.commands!.length})</summary><dl>{tool.commands!.map(command => <div key={command.name}>
+        <dt><code>{command.name}</code></dt>{command.description && <dd>{command.description}</dd>}
+      </div>)}</dl></details>}
       <section className="tool-section"><h2>Practices using this tool</h2>{data.practices.length ? data.practices.map(p => <Link key={p.id} to={`/practice/${p.id}`}>{p.title}</Link>) : <p className="muted">No practices cite this tool yet.</p>}</section>
       <History revisions={data.history}/>
       {session && !tool.merged_into && <MergePanel tool={tool} onMerged={id => navigate(`/tools/${id}`)}/>}
