@@ -15,3 +15,9 @@
 .skills-file { padding: .6rem 0; border-top: 1px solid var(--app-rule); }
 .skills-file pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
 .skills-draft { display: grid; gap: .65rem; padding: .5rem 0 1rem; }
+.skills-github-panel { margin-top: .35rem; border-top: 1px solid var(--app-rule); padding: .75rem 0; }
+.skills-github-panel > fieldset { min-width: 0; border: 0; padding: .8rem 0; margin: 0; display: grid; gap: .65rem; }
+.skills-sync-review { display: grid; gap: .6rem; min-width: 0; }
+.skills-sync-review > button { justify-self: start; }
+.skills-sync-review h3, .skills-sync-review h4 { margin: .45rem 0 0; }
+.skills-sync-review pre { max-height: 18rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }

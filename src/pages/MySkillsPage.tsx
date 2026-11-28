@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { GitHubSkillsPanel } from '../components/GitHubSkillsPanel'
 import { ExistingManifest } from '../components/ExistingManifest'
 import { useAuth } from '../auth/useAuth'
 import { CopyCommandButton } from '../components/PracticeCommands'
@@ -128,6 +129,8 @@ function SkillsEditor() {
           <a href={githubRepositoryURL(config.repo)} target="_blank" rel="noreferrer">View repository ↗</a>
           <a href={'https://github.com/new?'+new URLSearchParams({owner:config.repo.split('/')[0],name:config.repo.split('/')[1]})} target="_blank" rel="noreferrer">Create repository ↗</a>
         </div>}
+        {validRepo && <><label>GitHub branch<input value={branch} onChange={e => setBranch(e.target.value)} placeholder="main"/></label>
+          <GitHubSkillsPanel key={config.repo+'/'+branch} config={config} branch={branch} dirty={changed} onImport={change}/></>}
       </section>
       <section><h2>Catalog packages</h2>
         <label>Find a package<input type="search" placeholder="Search names or package identifiers" value={query} onChange={e => setQuery(e.target.value)}/></label>
@@ -151,7 +154,6 @@ function SkillsEditor() {
       {bundle?.problems.map(message => <p key={message} className="muted">{message}</p>)}
       {bundle && <section><h2>Repository files</h2>
         <p>Review each file, then commit it on GitHub. For an existing apm.yml, merge the dependencies into your manifest and keep its other settings.</p>
-        <label>GitHub branch<input value={branch} onChange={e => setBranch(e.target.value)} placeholder="main"/></label>
         {bundle.files.map(file => <FilePreview key={file.path} file={file} repo={config.repo} branch={branch}/>)}
         <button type="button" onClick={() => downloadRepositoryArchive(config.repo,bundle.files)}>Download repository files (.zip)</button>
         <ExistingManifest repository={config.repo} packages={config.selected_packages} branch={branch}/>
