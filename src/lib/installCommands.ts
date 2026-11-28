@@ -11,12 +11,14 @@ export function toolInstallCommand(tool: Pick<CatalogTool, 'install_command'> & 
   return tool.install_commands?.[os]?.trim() || tool.install_command?.trim() || ''
 }
 
+export function mentionInstallCommand(mention: PracticeMention, os: InstallOS) {
+  const saved = mention.install_command?.trim()
+  if (saved && saved !== mention.tool.install_command?.trim()) return saved
+  return toolInstallCommand(mention.tool, os)
+}
+
 export function generateInstallBlock(mentions: PracticeMention[], os: InstallOS): string {
-  const commands = distinctPracticeTools(mentions).map(mention => {
-    const saved = mention.install_command?.trim()
-    if (saved && saved !== mention.tool.install_command?.trim()) return saved
-    return toolInstallCommand(mention.tool, os)
-  })
+  const commands = distinctPracticeTools(mentions).map(mention => mentionInstallCommand(mention, os))
   return [...new Set(commands.filter(Boolean))].join('\n')
 }
 

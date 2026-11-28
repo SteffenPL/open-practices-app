@@ -36,3 +36,18 @@ it('omits the entire block when no platform has instructions', () => {
   const view=render(<InstallList title="Empty" mentions={[]}/>)
   expect(view.container.firstChild).toBeNull()
 })
+
+it('attributes shared generated segments without changing their text or attributing manual edits', () => {
+  const one = {id:'1', name:'One',slug:'one',urls:['https://example.org/one'],install_command:'prepare\ninstall shared'}
+  const two = {...one,id:'2',name:'Two',slug:'two',urls:['https://example.org/two']}
+  const props={mentions:[],legacyTools:[one,two],title:'Combined'}
+  const view=render(<InstallList {...props}/>)
+  const code=screen.getByLabelText('Install list')
+  fireEvent.focus(code.querySelector('span')!)
+  expect(screen.getByRole('tooltip').textContent).toBe('Onehttps://example.org/oneTwohttps://example.org/two')
+  expect(code.textContent).toBe('prepare\ninstall shared')
+  fireEvent.keyDown(code.querySelector('span')!,{key:'Escape'})
+  expect(screen.queryByRole('tooltip')).toBeNull()
+  view.rerender(<InstallList {...props} overrides={{windows:'manual',linux:'manual',macos:'manual'}}/>)
+  expect(code.querySelector('[tabindex]')).toBeNull()
+})

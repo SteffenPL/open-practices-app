@@ -10,3 +10,6 @@
 
 .install-block-compact pre { max-height: 4.35em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
 .install-block .install-unavailable { color: var(--app-muted); font-size: .78rem; }
+.install-segment:is(:hover, :focus-visible) { text-decoration: underline dotted; text-underline-offset: .2em; }
+.install-segment-info { display: grid; position: fixed; z-index: 60; pointer-events: none; width: max-content; max-width: min(16rem, 90vw); padding: .45rem .65rem; gap: .3rem; border: 1px solid var(--app-rule); border-radius: .4rem; background: var(--app-surface); color: var(--app-ink); font-size: .8rem; overflow-wrap: anywhere; }
+.install-segment-info small { display: block; color: var(--app-muted); }
