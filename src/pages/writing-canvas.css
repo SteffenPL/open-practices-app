@@ -7,7 +7,7 @@
 .writing-sheet { margin-bottom: 1.15rem; }
 .writing-canvas .writing-label { display: block; font-size: .72rem; letter-spacing: .025em; color: var(--app-muted); }
 .writing-canvas #practice-title, .writing-canvas #practice-body { display: block; width: 100%; padding: .3rem 0; color: var(--app-ink); background: transparent; border: 0; border-radius: 0; resize: vertical; field-sizing: content; }
-.writing-canvas #practice-title { min-height: 1.4em; margin-bottom: 1.6rem; font: 500 clamp(2.2rem,5vw,3.75rem)/1.09 Georgia, serif; letter-spacing: -.048em; }
+.writing-canvas #practice-title { min-height: 1.4em; margin-bottom: 1.6rem; font: var(--title-weight) clamp(2.2rem,5vw,3.75rem)/1.16 var(--title-face); letter-spacing: -.022em; }
 .writing-canvas #practice-body { min-height: 6.2rem; font-size: clamp(1.02rem, 2vw, 1.2rem); line-height: 1.65; }
 .writing-canvas :is(#practice-title,#practice-body):focus-visible { outline: 2px solid var(--app-accent); outline-offset: .35rem; }
 .writing-canvas #mention-help { margin-top: .65rem; font-size: .75rem; }

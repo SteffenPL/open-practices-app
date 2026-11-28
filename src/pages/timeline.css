@@ -9,7 +9,6 @@
   padding: 0 1.25rem 3rem;
   color: var(--timeline-ink);
   background: transparent;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 .timeline-page *, .timeline-page *::before, .timeline-page *::after { box-sizing: border-box; }
 .timeline-page h1, .timeline-page h2, .timeline-page p { margin: 0; }
@@ -19,7 +18,7 @@
 .timeline-shell { max-width: 984px; margin: clamp(1.4rem, 4vw, 3rem) auto 0; }
 .feed-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding-bottom: 1.2rem; border-bottom: 1px solid var(--timeline-rule); }
 .feed-views, .practice-compose-nav { display: flex; align-items: baseline; gap: 1.2rem; }
-.feed-views h1 { font: 500 clamp(2rem, 3.4vw, 2.8rem)/1.06 Georgia, serif; letter-spacing: -.055em; }
+.timeline-page .feed-views h1 { font: var(--title-weight) clamp(2rem, 3.4vw, 2.8rem)/1.14 var(--title-face); letter-spacing: -.022em; }
 .feed-views a { color: var(--timeline-muted); font-size: 1rem; font-weight: 550; }
 .feed-views a:hover, .practice-compose-nav a:hover { text-decoration: underline; text-underline-offset: .22em; }
 .practice-compose-nav { align-items: center; gap: .35rem; }
@@ -34,7 +33,7 @@
 .timeline-post-author { flex: none; max-width: 9.5rem; overflow: hidden; color: var(--timeline-muted); font-size: .72rem; font-weight: 670; text-overflow: ellipsis; white-space: nowrap; }
 .timeline-post-separator { flex: none; color: var(--timeline-muted); font-size: .75rem; }
 .timeline-post-title { min-width: 0; }
-.timeline-post-title h2 { overflow: hidden; font-size: clamp(1.16rem, 1.75vw, 1.38rem); line-height: 1.25; font-weight: 710; letter-spacing: -.018em; overflow-wrap: anywhere; }
+.timeline-page .timeline-post-title h2 { font-family: var(--title-face); overflow: hidden; font-size: clamp(1.16rem, 1.75vw, 1.38rem); line-height: 1.24; font-weight: var(--title-weight); letter-spacing: -.012em; overflow-wrap: anywhere; }
 .timeline-post-title:hover h2 { color: var(--timeline-accent); }
 .timeline-post-content { min-width: 0; }
 .timeline-post-content > p { color: var(--timeline-ink); font-size: .94rem; line-height: 1.52; }
