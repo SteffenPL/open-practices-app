@@ -5,7 +5,11 @@ export interface Profile {
   created_at: string
 }
 
+export type InstallPlatform = 'macos' | 'linux' | 'windows'
+export type PlatformCommands = Partial<Record<InstallPlatform, string>>
+
 export interface Tool {
+  install_commands?: PlatformCommands
   id: string
   apm_id: string | null
   repo_url: string | null
@@ -35,6 +39,7 @@ export interface Element {
 }
 
 export interface Practice {
+  install_overrides?: PlatformCommands
   mention_format?: boolean
   id: string
   author_id: string

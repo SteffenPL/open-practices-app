@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import type { CatalogTool } from './catalogService'
-import type { Practice } from './types'
+import type { PlatformCommands, Practice } from './types'
 
 export interface MentionInput {
   tool_id: string
@@ -15,6 +15,7 @@ export interface PracticeMention extends MentionInput {
 }
 
 export interface MentionPracticeInput {
+  install_overrides?: PlatformCommands
   id?: string
   request_id?: string
   title: string
@@ -28,6 +29,7 @@ export interface MentionPracticeInput {
 export async function saveMentionPractice(input: MentionPracticeInput): Promise<Practice> {
   if (!supabase) throw new Error('Supabase is not configured')
   const fields = {
+    ...(input.install_overrides === undefined ? {} : { p_install_overrides: input.install_overrides }),
     p_title: input.title, p_body: input.body, p_image_path: input.image_path,
     p_mentions: input.mentions, p_source_url: input.source_url ?? null,
   }
