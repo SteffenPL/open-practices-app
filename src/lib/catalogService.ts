@@ -1,10 +1,12 @@
 import { supabase } from './supabase'
+import type { InstallCommands } from './installCommands'
 import { AUTHOR_SELECT } from './selects'
 import type { Practice, Tool } from './types'
 
 export interface CatalogTool extends Tool {
   slug: string
   website_url: string | null
+  install_commands?: InstallCommands
   install_command: string | null
   merged_into: string | null
   updated_at: string
@@ -17,6 +19,7 @@ export interface ToolInput {
   apm_id?: string | null
   repo_url?: string | null
   website_url?: string | null
+  install_commands?: InstallCommands
   install_command?: string | null
 }
 

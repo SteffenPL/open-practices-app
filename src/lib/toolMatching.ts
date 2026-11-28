@@ -1,3 +1,4 @@
+import { installOSLabels, type InstallOS } from './installCommands'
 import type { CatalogTool } from './catalogService'
 
 export const toolFields = [
@@ -8,6 +9,8 @@ export const toolFields = [
   ['website_url', 'Website'],
   ['install_command', 'Install command'],
 ] as const
+
+export const platformFields = Object.entries(installOSLabels) as [InstallOS, string][]
 
 export type ToolField = typeof toolFields[number][0]
 export type ToolDraft = Record<ToolField, string>

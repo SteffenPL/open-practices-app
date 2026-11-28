@@ -2,7 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { ToolEditor } from '../components/ToolEditor'
-import { toolFields } from '../lib/toolMatching'
+import { toolInstallCommand, useInstallOS } from '../lib/installCommands'
+import { platformFields, toolFields } from '../lib/toolMatching'
 import { CopyCommandButton } from '../components/PracticeCommands'
 import { getTool, listToolHistory, listToolPractices, listTools, mergeTools, type CatalogTool, type ToolRevision } from '../lib/catalogService'
 import type { Practice } from '../lib/types'
@@ -51,8 +52,12 @@ export function CatalogPage() {
 function revisionFields(revision: ToolRevision) {
   const before = revision.before
   const after = revision.after
-  return [...toolFields, ['merged_into','Merged into'] as const].filter(([field]) => (before?.[field] ?? null) !== (after?.[field] ?? null))
+  const textFields = [...toolFields, ['merged_into','Merged into'] as const].filter(([field]) => (before?.[field] ?? null) !== (after?.[field] ?? null))
     .map(([field,label]) => ({ field, label, before: String(before?.[field] ?? ''), after: String(after?.[field] ?? '') }))
+  const platformChanges = platformFields.map(([os, label]) => ({
+    field: os, label: label + ' install command', before: before?.install_commands?.[os] ?? '', after: after?.install_commands?.[os] ?? '',
+  })).filter(change => change.before !== change.after)
+  return [...textFields, ...platformChanges]
 }
 
 function History({ revisions }: { revisions: ToolRevision[] }) {
@@ -121,7 +126,9 @@ export function ToolPage() {
     }).catch(cause => { if(live) setError(message(cause)) })
     return () => { live = false }
   },[id,refresh])
+  const [os] = useInstallOS()
   const tool = data?.tool
+  const command = tool ? toolInstallCommand(tool, os) : ''
   return <Frame><Link className="tool-back" to="/tools">← Tool catalog</Link>
     {error && <p role="alert">{error} <button onClick={() => setRefresh(refresh+1)}>Retry</button></p>}
     {!data && !error && <p role="status">Loading tool…</p>}
@@ -135,7 +142,7 @@ export function ToolPage() {
       {tool.apm_id && <p className="tool-package-id"><code>{tool.apm_id}</code></p>}
       <div className="tool-actions">{tool.repo_url && <a href={tool.repo_url} target="_blank" rel="noreferrer">Source ↗</a>}
         {tool.website_url && <a href={tool.website_url} target="_blank" rel="noreferrer">Website ↗</a>}</div>
-      {tool.install_command && <section className="tool-section"><h2>Install command</h2><div className="tool-install"><pre><code>{tool.install_command}</code></pre><CopyCommandButton text={tool.install_command} label="Copy install command"/></div></section>}
+      {command && <section className="tool-section"><h2>Install command</h2><div className="tool-install"><pre><code>{command}</code></pre><CopyCommandButton text={command} label="Copy install command"/></div></section>}
       <section className="tool-section"><h2>Practices using this tool</h2>{data.practices.length ? data.practices.map(p => <Link key={p.id} to={`/practice/${p.id}`}>{p.title}</Link>) : <p className="muted">No practices cite this tool yet.</p>}</section>
       <History revisions={data.history}/>
       {session && !tool.merged_into && <MergePanel tool={tool} onMerged={id => navigate(`/tools/${id}`)}/>}

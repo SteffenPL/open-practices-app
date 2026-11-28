@@ -17,7 +17,7 @@ describe('shared tool editor', () => {
     fill('Tool name', 'Notebook')
     fill('Description', 'A place to keep lab notes.')
     expect(screen.getByLabelText('APM package identifier').closest('details')?.open).toBe(false)
-    expect(screen.getByLabelText('Install command').closest('details')?.open).toBe(false)
+    expect(screen.getByLabelText('Default install command').closest('details')?.open).toBe(false)
     fireEvent.click(screen.getByRole('button', {name:'Create tool'}))
     await waitFor(() => expect(createTool).toHaveBeenCalledWith(expect.objectContaining({name:'Notebook',description:'A place to keep lab notes.',install_command:''})))
   })
@@ -47,13 +47,26 @@ describe('shared tool editor', () => {
   it('previews a proposed merge of unsaved fields and retains unfilled catalog details', async () => {
     vi.mocked(updateTool).mockResolvedValue(existing)
     render(<ToolEditor onSaved={vi.fn()} onCancel={vi.fn()} initialName="PDF"/>)
+    vi.mocked(listTools).mockResolvedValue([{...existing,install_commands:{linux:'install linux'}}])
     fill('Description','Read and assemble PDFs')
+    fill('macOS install command','install mac')
     fireEvent.click(screen.getByRole('button',{name:'Create tool'}))
     fireEvent.click(await screen.findByRole('button',{name:'Merge details'}))
     expect(updateTool).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button',{name:'Confirm merge'}))
-    await waitFor(() => expect(updateTool).toHaveBeenCalledWith('first',expect.objectContaining({apm_id:existing.apm_id,description:'Read and assemble PDFs'}),existing.updated_at))
+    await waitFor(() => expect(updateTool).toHaveBeenCalledWith('first',expect.objectContaining({apm_id:existing.apm_id,description:'Read and assemble PDFs',install_commands:{linux:'install linux',macos:'install mac'}}),existing.updated_at))
   })
+  it('clears a platform override while preserving the default and other platforms', async () => {
+    const tool = {...existing, install_command:'install anywhere', install_commands:{windows:'install windows',linux:'install linux'}}
+    vi.mocked(updateTool).mockResolvedValue(tool)
+    render(<ToolEditor tool={tool} onSaved={vi.fn()} onCancel={vi.fn()}/>)
+    fill('Windows install command','  ')
+    fireEvent.click(screen.getByRole('button',{name:'Save changes'}))
+    await waitFor(() => expect(updateTool).toHaveBeenCalledWith(tool.id,expect.objectContaining({
+      install_command:'install anywhere',install_commands:{linux:'install linux'},
+    }),tool.updated_at))
+  })
+
   it('merges two saved entries through the audited merge operation', async () => {
     vi.mocked(mergeTools).mockResolvedValue(existing)
     render(<ToolEditor tool={{...existing,id:'second',name:'PDF Reader'}} onSaved={vi.fn()} onCancel={vi.fn()}/>)

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { createTool, listTools, mergeTools, updateTool, type CatalogTool, type ToolInput } from '../lib/catalogService'
-import { catalogMatches, exactPackageMatch, toolFields, type ToolDraft } from '../lib/toolMatching'
+import { catalogMatches, exactPackageMatch, platformFields, toolFields, type ToolDraft } from '../lib/toolMatching'
+import type { InstallCommands, InstallOS } from '../lib/installCommands'
 import { readToolMetadata } from '../lib/toolMetadata'
 import '../pages/tool-catalog.css'
 
@@ -18,6 +19,7 @@ export function ToolEditor({ tool, initialName = '', onSaved, onCancel }: Props)
     apm_id: tool?.apm_id || '', repo_url: tool?.repo_url || '', website_url: tool?.website_url || '',
     install_command: tool?.install_command || '',
   }))
+  const [commands, setCommands] = useState<InstallCommands>(() => ({ ...tool?.install_commands }))
   const [matches, setMatches] = useState<CatalogTool[] | null>(null)
   const [merge, setMerge] = useState<CatalogTool | null>(null)
   const [busy, setBusy] = useState(false)
@@ -25,11 +27,14 @@ export function ToolEditor({ tool, initialName = '', onSaved, onCancel }: Props)
   const [lookupStatus, setLookupStatus] = useState('')
   const matchHeading = useRef<HTMLHeadingElement>(null)
   useEffect(() => { if (matches) matchHeading.current?.focus() }, [matches])
-  useEffect(() => { setMatches(null); setMerge(null); setError('') }, [draft])
+  useEffect(() => { setMatches(null); setMerge(null); setError('') }, [draft, commands])
+
+  const filledCommands = Object.fromEntries(Object.entries(commands).flatMap(([os, value]) =>
+    value?.trim() ? [[os, value.trim()]] : []))
 
   function mergedDraft(target: CatalogTool): ToolInput {
     // A proposed merge can fill missing fields or explicitly replace existing ones.
-    return { ...Object.fromEntries(toolFields.map(([field]) => [field, draft[field].trim() || target[field]])), name: draft.name.trim() || target.name }
+    return { install_commands: { ...target.install_commands, ...filledCommands }, ...Object.fromEntries(toolFields.map(([field]) => [field, draft[field].trim() || target[field]])), name: draft.name.trim() || target.name }
   }
 
   async function save(action: 'check' | 'separate' | 'merge') {
@@ -47,7 +52,8 @@ export function ToolEditor({ tool, initialName = '', onSaved, onCancel }: Props)
         const found = catalogMatches(draft, (await listTools()).filter(t => t.id !== tool?.id && !t.merged_into))
         if (found.length) { setMatches(found); return }
       }
-      const saved = tool ? await updateTool(tool.id, draft, tool.updated_at) : await createTool(draft)
+      const input = { ...draft, install_commands: filledCommands }
+      const saved = tool ? await updateTool(tool.id, input, tool.updated_at) : await createTool(input)
       onSaved(saved)
     } catch (cause) { setError(errorText(cause)) }
     finally { setBusy(false) }
@@ -66,6 +72,15 @@ export function ToolEditor({ tool, initialName = '', onSaved, onCancel }: Props)
   function submit(event: FormEvent) { event.preventDefault(); void save('check') }
   if (loading) return <p role="status">Checking sign-in…</p>
   if (!session) return <div className="tool-editor tool-signin"><p>Sign in to contribute to the tool catalog.</p><div className="tool-actions"><button className="primary" type="button" onClick={() => void signInWithGoogle()}>Sign in with Google</button><button type="button" onClick={onCancel}>Cancel</button></div></div>
+
+  function changeCommand(os: InstallOS, value: string) {
+    setCommands(previous => {
+      const next = { ...previous }
+      if (value) next[os] = value
+      else delete next[os]
+      return next
+    })
+  }
 
   function change(field: keyof ToolDraft, value: string) {
     setLookupStatus('')
@@ -98,7 +113,10 @@ export function ToolEditor({ tool, initialName = '', onSaved, onCancel }: Props)
       <details className="tool-disclosure">
         <summary>Install command</summary>
         <div className="tool-disclosure-content">
-          <label>Install command<textarea rows={2} className="tool-command-field" placeholder="apm install owner/repository" value={draft.install_command} onChange={e => change('install_command', e.target.value)}/></label>
+          <label>Default install command<textarea rows={2} className="tool-command-field" placeholder="apm install owner/repository" value={draft.install_command} onChange={e => change('install_command', e.target.value)}/></label>
+          {platformFields.map(([os, label]) => <label key={os}>{label} install command
+            <textarea rows={2} maxLength={8000} className="tool-command-field" value={commands[os] ?? ''} onChange={event => changeCommand(os, event.target.value)}/>
+          </label>)}
         </div>
       </details>
     </div>
@@ -110,7 +128,10 @@ export function ToolEditor({ tool, initialName = '', onSaved, onCancel }: Props)
         <button type="button" disabled={busy} onClick={() => setMerge(candidate)}>{tool ? 'Merge tools' : 'Merge details'}</button></div>
       </div>)}
       {merge && <div className="tool-merge-confirm"><h3>Merge details into {merge.name}?</h3>
-        {tool ? <p>Practice references will move from {tool.name} to {merge.name}. Both entries will retain the merge in their history.</p> : <dl>{toolFields.map(([field,label]) => <div key={field}><dt>{label}</dt><dd>{mergedDraft(merge)[field] || '—'}</dd></div>)}</dl>}
+        {tool ? <p>Practice references will move from {tool.name} to {merge.name}. Both entries will retain the merge in their history.</p> : <dl>{toolFields.map(([field,label]) => <div key={field}><dt>{label}</dt><dd>{mergedDraft(merge)[field] || '—'}</dd></div>)}{platformFields.map(([os,label]) => {
+          const command = mergedDraft(merge).install_commands?.[os]
+          return command && <div key={os}><dt>{label} install command</dt><dd>{command}</dd></div>
+        })}</dl>}
         <button type="button" disabled={busy} onClick={() => void save('merge')}>Confirm merge</button>
       </div>}
       {matches.some(t => exactPackageMatch(draft,t)) ? <p>The package identifier already belongs to a tool.</p> :
