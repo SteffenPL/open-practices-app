@@ -19,6 +19,7 @@ describe('qualified mentions', () => {
     expect(resolveMentionTool('#Matt-Skills',[tool,{slug:'another',name_aliases:['Matt Skills']}])).toBeUndefined()
   })
   it('suggests commands while selecting a tool and filters after ::', () => {
+    expect(mentionSuggestions('mattp',[tool])[0].token).toBe('#mattpocock/skills')
     expect(mentionSuggestions('mattpocock/skills',[tool]).map(m=>m.token)).toEqual(['#mattpocock/skills','#mattpocock/skills::review'])
     expect(mentionSuggestions('older::re',[tool])[0]).toMatchObject({token:'#older::review',description:'Review a change'})
   })

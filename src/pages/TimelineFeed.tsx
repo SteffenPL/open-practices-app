@@ -1,3 +1,4 @@
+import { preferredToolHandle } from '../lib/mentionIdentity'
 import { ToolMentionLink } from '../components/ToolMentionLink'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -50,7 +51,7 @@ function PracticePost({ practice, tools, mentions }: {
         : <span className="timeline-avatar timeline-avatar-initial" aria-hidden="true">{authorName.slice(0, 1)}</span>}
       <span className="timeline-post-author">{authorName}</span>
         {!practice.mention_format && tools.length > 0 && <div className="timeline-post-tags" aria-label="Mentioned tools">
-          {tools.map(tool => <ToolMentionLink key={tool.id} tool={tool}>#{tool.slug}</ToolMentionLink>)}
+          {tools.map(tool => <ToolMentionLink key={tool.id} tool={tool}>#{preferredToolHandle(tool)}</ToolMentionLink>)}
         </div>}
         <time className="timeline-post-date" dateTime={date}>{formatDate(date)}</time>
         <Link to={`/practice/${practice.id}`} className="timeline-post-action">Read more <span aria-hidden="true">↗</span></Link>
@@ -68,7 +69,7 @@ export function TimelineFeed({ practices, tools, mentions, searchQuery, onSearch
   const visibleItems = practices.filter((practice) => {
     const matchesTopic = selectedTopic === 'all' || toolsFor(practice).some(tool => tool.id === selectedTopic)
     const bodyParts = splitGuidedPracticeBody(practice.body)
-    const searchText = [practice.title, bodyParts.opening, bodyParts.closing, practice.author?.display_name ?? '', ...toolsFor(practice).flatMap(tool => [tool.name, tool.slug])].join(' ').toLowerCase()
+    const searchText = [practice.title, bodyParts.opening, bodyParts.closing, practice.author?.display_name ?? '', ...toolsFor(practice).flatMap(tool => [tool.name, tool.slug, tool.apm_id])].join(' ').toLowerCase()
     return matchesTopic && (!query || searchText.includes(query))
   })
 
@@ -98,7 +99,7 @@ export function TimelineFeed({ practices, tools, mentions, searchQuery, onSearch
           <p className="timeline-sidebar-label">Mentioned tools</p>
           <nav aria-label="Filter by tool">
             <button className={`timeline-topic-option${selectedTopic === 'all' ? ' is-active' : ''}`} aria-pressed={selectedTopic === 'all'} onClick={() => setSelectedTopic('all')}><b>All practices</b><span>{practices.length}</span></button>
-            {topics.map((topic, index) => <button key={topic.id} className={`timeline-topic-option${selectedTopic === topic.id ? ' is-active' : ''}`} aria-pressed={selectedTopic === topic.id} onClick={() => setSelectedTopic(topic.id)}><i className={`timeline-topic-swatch timeline-topic-swatch-${index % 4}`} /><b>#{topic.slug}</b><span>{practices.filter((practice) => toolsFor(practice).some(tool => tool.id === topic.id)).length}</span></button>)}
+            {topics.map((topic, index) => <button key={topic.id} className={`timeline-topic-option${selectedTopic === topic.id ? ' is-active' : ''}`} aria-pressed={selectedTopic === topic.id} onClick={() => setSelectedTopic(topic.id)}><i className={`timeline-topic-swatch timeline-topic-swatch-${index % 4}`} /><b>#{preferredToolHandle(topic)}</b><span>{practices.filter((practice) => toolsFor(practice).some(tool => tool.id === topic.id)).length}</span></button>)}
           </nav>
         </aside>
       </div>

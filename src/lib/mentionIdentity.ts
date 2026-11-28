@@ -18,6 +18,9 @@ function key(identifier: string) {
 function commandHandle(name: string) {
   return name.replace(/^\/+/, '').trim().replace(/[^\p{L}\p{N}_.-]+/gu, '-').replace(/^[.-]+|[.-]+$/g, '')
 }
+export function preferredToolHandle(tool: Pick<Identity, 'slug' | 'apm_id'>) {
+  return tool.apm_id?.split('/').length === 2 ? tool.apm_id : tool.slug
+}
 function handles(entry: Identity) {
   return [entry.slug, entry.apm_id, ...(entry.name_aliases ?? []).map(alias => alias.replace(/^#/, '').trim().replace(/\s+/g, '-'))].filter((v): v is string => !!v)
 }
@@ -48,7 +51,7 @@ export function mentionSuggestions<T extends Mentionable>(query: string, tools: 
       const byHandle = catalogHandles.find(handle => key(handle) === key(base))
         ?? catalogHandles.find(handle => handle.toLowerCase().includes(base.toLowerCase()))
       if (!byHandle && !tool.name?.toLowerCase().includes(base.toLowerCase())) continue
-      const handle = byHandle && (base.includes('/') || key(byHandle) === key(base)) ? byHandle : tool.slug
+      const handle = byHandle && (base.includes('/') || key(byHandle) === key(base)) ? byHandle : preferredToolHandle(tool)
       matches.push({tool,token:'#'+handle,label:tool.name ?? tool.slug})
       if (base && toolMatch === tool) {
         for (const item of tool.commands ?? []) {

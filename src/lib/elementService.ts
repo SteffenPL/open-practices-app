@@ -19,13 +19,13 @@ export async function getElements(practiceId: string): Promise<CatalogElement[]>
   return elements
 }
 
-export type PracticeToolLink = Pick<CatalogTool, 'id' | 'name' | 'slug' | 'install_command' | 'install_commands'>
+export type PracticeToolLink = Pick<CatalogTool, 'id' | 'name' | 'slug' | 'install_command' | 'install_commands'> & Partial<Pick<CatalogTool, 'apm_id' | 'urls' | 'repo_url' | 'website_url'>>
 
 export async function listLegacyFeedTools(practiceIds: string[]): Promise<Record<string, PracticeToolLink[]>> {
   if (!supabase || !practiceIds.length) return {}
   const { data, error } = await supabase
     .from('elements')
-    .select('practice_id, options(position, tool:tools(id,name,slug,install_command,install_commands,repo_url,website_url,urls))')
+    .select('practice_id, options(position, tool:tools(id,name,slug,apm_id,install_command,install_commands,repo_url,website_url,urls))')
     .in('practice_id', practiceIds)
     .order('position').order('position', { referencedTable: 'options' })
   if (error) throw error
