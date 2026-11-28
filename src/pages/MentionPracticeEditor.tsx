@@ -10,6 +10,7 @@ import { listTools, type CatalogTool } from '../lib/catalogService'
 import { listPracticeMentions, saveMentionPractice, type PracticeMention } from '../lib/mentionService'
 import { getElements } from '../lib/elementService'
 import { getPractice, imageUrl, uploadPracticeImage } from '../lib/practiceService'
+import { generateInstallBlock, installOSLabels, useInstallOS, type InstallCommands } from '../lib/installCommands'
 import { distinctPracticeTools } from '../lib/distinctPracticeTools'
 import { activePracticeMention, tokenizePracticeText } from '../lib/practiceText'
 import { describeSaveError } from '../lib/saveError'
@@ -40,6 +41,8 @@ export function MentionPracticeEditor() {
 
 function Composer({ id, userId }: { id?: string; userId: string }) {
   const navigate = useNavigate()
+  const [os] = useInstallOS()
+  const [overrides, setOverrides] = useState<InstallCommands>({})
   const input = useRef<HTMLTextAreaElement>(null)
   const locked = useRef(false)
   const createRequestId = useRef<string | null>(null)
@@ -82,6 +85,7 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
           if (additions.length) content += '\n\n' + additions.join(' ')
         }
         setOriginal(record)
+        setOverrides(record.install_overrides ?? {})
         setTitle(record.title)
         setBody(content)
         setLegacy(elements)
@@ -105,6 +109,16 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
     const tool = lookup.get(token.text.toLowerCase())
     if (tool) mentions.push({ tool_id: tool.id, token: token.text, tool, position: mentions.length,
       install_command: setups[tool.id]?.command || null, notes: setups[tool.id]?.notes || null })
+  }
+  const generated = generateInstallBlock(mentions, os)
+  const hasOverride = overrides[os] !== undefined
+  const osName = installOSLabels[os]
+  function resetOverride() {
+    setOverrides(previous => {
+      const next = { ...previous }
+      delete next[os]
+      return next
+    })
   }
   const query = anchor?.query.toLowerCase() ?? ''
   const matches = anchor ? tools.filter(tool => [tool.name, tool.slug, tool.apm_id, ...(tool.aliases ?? []).map(alias => alias.slug)]
@@ -169,7 +183,7 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
     try {
       if (!id) createRequestId.current ??= crypto.randomUUID()
       const practice = await saveMentionPractice({ id, request_id: id ? undefined : createRequestId.current ?? undefined, title, body, image_path: image, source_url: original?.source_url,
-        significant, mentions: mentions.map(({ tool_id, token, install_command, notes }) => ({ tool_id, token, install_command, notes })) })
+        significant, install_overrides: overrides, mentions: mentions.map(({ tool_id, token, install_command, notes }) => ({ tool_id, token, install_command, notes })) })
       navigate('/practice/' + practice.id)
     } catch (cause) { setError(describeSaveError(cause)) }
     finally { locked.current = false; setSaving(false) }
@@ -204,6 +218,16 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
           </div>}
         </div>
         <p id="mention-help" className="muted">Mention a tool with <kbd>#</kbd> · Use <code>`code`</code> or “quoted prompts”</p></section>
+        <details className="writing-install" open={Boolean(generated || hasOverride)}>
+          <summary>Install commands <small>{osName}</small></summary>
+          <label htmlFor="practice-install-block">{osName} install block</label>
+          <textarea id="practice-install-block" rows={Math.min(8, Math.max(2, (overrides[os] ?? generated).split('\n').length))} value={overrides[os] ?? generated}
+            placeholder="Add an install command" spellCheck={false}
+            onChange={event => setOverrides({ ...overrides, [os]: event.target.value })} />
+          {hasOverride
+            ? <button type="button" className="link-like" onClick={resetOverride}>Use generated commands</button>
+            : <p className="muted">Generated from the tools in your message. Edit to customize for {osName}.</p>}
+        </details>
         {distinctPracticeTools(mentions).map(mention => <details key={mention.tool_id} className="composer-setup">
           <summary><span className="writing-tool-name"><b aria-hidden="true">#</b> {mention.tool.name}</span><small>Optional setup</small></summary>
           <label htmlFor={'command-'+mention.tool_id}>Install command</label>
@@ -217,7 +241,7 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
         </details>)}
         {body && <details className="composer-preview"><summary>Preview</summary>
           <h2>{title}</h2><p><PracticeText text={body} mentions={mentions} /></p>
-          <InstallList mentions={mentions} title={title} />
+          <InstallList mentions={mentions} title={title} overrides={overrides} />
         </details>}
         <details className="writing-attachment"><summary>{image ? 'Attached image' : 'Add an image'}</summary>
           {image && <><img className="practice-image" src={imageUrl(image) ?? ''} alt="Practice attachment" /><button type="button" onClick={() => setImage(null)}>Remove image</button></>}

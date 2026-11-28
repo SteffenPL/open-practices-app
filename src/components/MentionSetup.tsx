@@ -1,14 +1,19 @@
 import { Link } from 'react-router-dom'
 import type { PracticeMention } from '../lib/mentionService'
+import { generateInstallBlock, useInstallOS, type InstallCommands } from '../lib/installCommands'
 import { CopyCommandButton } from './PracticeCommands'
 import { PracticeText } from './PracticeText'
 
 import { distinctPracticeTools } from '../lib/distinctPracticeTools'
 
-export function InstallList({ mentions, title }: { mentions: PracticeMention[]; title: string }) {
-  const commands = distinctPracticeTools(mentions).map(tool => tool.install_command).filter((value): value is string => Boolean(value?.trim()))
-  if (!commands.length) return null
-  const text = [...new Set(commands)].join('\n')
+export function InstallList({ mentions, title, overrides }: {
+  mentions: PracticeMention[]
+  title: string
+  overrides?: InstallCommands
+}) {
+  const [os] = useInstallOS()
+  const text = overrides?.[os] ?? generateInstallBlock(mentions, os)
+  if (!text.trim()) return null
   return <div className="timeline-cli">
     <pre aria-label="Install list">{text}</pre>
     <CopyCommandButton text={text} label={`Copy commands for ${title}`} />

@@ -36,3 +36,5 @@
 @supports (field-sizing: content) {
   .writing-canvas #practice-title, .writing-canvas #practice-body { resize: none; }
 }
+.writing-install textarea { font-family: ui-monospace, monospace; overflow-wrap: anywhere; }
+.writing-install .muted, .writing-install .link-like { margin-top: .3rem; font-size: .75rem; }

@@ -93,7 +93,7 @@ export function PracticePage() {
         {practice.mention_format
           ? <p className="practice-key-message"><PracticeText text={practice.body} mentions={mentions} /></p>
           : <div className="markdown-body"><Markdown remarkPlugins={[remarkGfm]}>{bodyParts.opening}</Markdown></div>}
-        {practice.mention_format && <InstallList mentions={mentions} title={practice.title} />}
+        {practice.mention_format && <InstallList mentions={mentions} title={practice.title} overrides={practice.install_overrides} />}
         {image && <img className="practice-image" src={image} alt="" />}
         <MentionNotes mentions={mentions} />
         <LegacyPracticeNotes elements={elements} />
