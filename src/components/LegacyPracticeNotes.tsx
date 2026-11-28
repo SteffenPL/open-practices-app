@@ -1,6 +1,6 @@
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Link } from 'react-router-dom'
+import { ToolMentionLink } from './ToolMentionLink'
 import type { Element, Tool } from '../lib/types'
 import { cleanOptionDescription, getInstallCommand } from '../pages/guidedPracticeContent'
 
@@ -23,7 +23,7 @@ export function LegacyPracticeNotes({ elements }: { elements: Element[] }) {
         const command = hasCatalogCommand ? null : getInstallCommand(option.description)
         return <div className="practice-note" key={option.id}>
           <strong>{option.name}</strong>
-          {option.tool && <Link className="practice-mention" to={`/tools/${option.tool.id}`}>{mentionLabel(option.tool)}</Link>}
+          {option.tool && <ToolMentionLink tool={option.tool}>{mentionLabel(option.tool)}</ToolMentionLink>}
           {command && <pre><code>{command}</code></pre>}
           <Markdown remarkPlugins={[remarkGfm]}>{cleanOptionDescription(option.description)}</Markdown>
         </div>

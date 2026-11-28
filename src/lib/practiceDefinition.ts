@@ -43,6 +43,7 @@ export interface PracticeDefinition {
   legacyNotes?: string
 }
 
+import { mentionBase } from './mentionIdentity.ts'
 import { tokenizePracticeText } from './practiceText.ts'
 
 export class DefinitionError extends Error {}
@@ -161,8 +162,13 @@ export function parseDefinition(markdown: string): PracticeDefinition {
       slug = ''; command = null; notes = []; inNotes = false; inCommand = false
     }
     for (const line of setupLines) {
-      const heading = line.match(/^###\s+#?([\w-]+)\s*$/)
-      if (heading) { finish(); slug = heading[1].toLowerCase(); continue }
+      const heading = line.match(/^###\s+#?([^#\s]+)\s*$/)
+      if (heading) {
+        finish()
+        slug = mentionBase(heading[1])
+        if (!slug.includes('/')) slug = slug.toLowerCase()
+        continue
+      }
       if (!slug) continue
       if (line.startsWith('  ') && (inCommand || inNotes)) {
         const content = line.slice(2)
@@ -353,8 +359,9 @@ export function parseDefinition(markdown: string): PracticeDefinition {
   })))
   const legacySeen = new Map<string, number>()
   const mentions = tokenizePracticeText(importBody).filter((token) => token.kind === 'mention').map((token) => {
-    const slug = token.text.slice(1).toLowerCase()
-    const setup = setups.get(slug)
+    const base = mentionBase(token.text)
+    const slug = base.includes('/') ? base : base.toLowerCase()
+    const setup = setups.get(slug) ?? setups.get(base)
     const legacyIndex = legacySeen.get(slug) ?? 0
     const match = legacyTools.filter((item) => item.slug === slug)[legacyIndex]
     legacySeen.set(slug, legacyIndex + 1)

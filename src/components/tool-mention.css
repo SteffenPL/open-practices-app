@@ -1,0 +1,3 @@
+.tool-mention-reference { position: relative; }
+.tool-mention-info { position: absolute; z-index: 8; top: 100%; left: 0; width: max-content; max-width: min(16rem, 70vw); padding: .5rem .65rem; border: 1px solid var(--app-rule); border-radius: .45rem; background: var(--app-surface); color: var(--app-ink); font-size: .8rem; line-height: 1.4; font-weight: 600; white-space: normal; overflow-wrap: anywhere; }
+.tool-mention-info small { display: block; color: var(--app-muted); font-weight: 400; }

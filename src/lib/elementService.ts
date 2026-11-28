@@ -25,7 +25,7 @@ export async function listLegacyFeedTools(practiceIds: string[]): Promise<Record
   if (!supabase || !practiceIds.length) return {}
   const { data, error } = await supabase
     .from('elements')
-    .select('practice_id, options(position, tool:tools(id,name,slug,install_command,install_commands))')
+    .select('practice_id, options(position, tool:tools(id,name,slug,install_command,install_commands,repo_url,website_url,urls))')
     .in('practice_id', practiceIds)
     .order('position').order('position', { referencedTable: 'options' })
   if (error) throw error

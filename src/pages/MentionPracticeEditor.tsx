@@ -1,3 +1,4 @@
+import { mentionSuggestions, resolveMentionTool } from '../lib/mentionIdentity'
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
@@ -20,15 +21,6 @@ import { GUIDED_CLOSING_MARKER } from './guidedPracticeContent'
 import './writing-canvas.css'
 
 type Anchor = { start: number; end: number; query: string }
-
-function catalogTokens(tools: CatalogTool[]) {
-  const result = new Map<string, CatalogTool>()
-  for (const tool of tools) {
-    result.set('#' + tool.slug.toLowerCase(), tool)
-    for (const alias of tool.aliases ?? []) result.set('#' + alias.slug.toLowerCase(), tool)
-  }
-  return result
-}
 
 export function MentionPracticeEditor() {
   const { id } = useParams()
@@ -96,13 +88,12 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
     return () => { active = false }
   }, [id, userId])
 
-  const lookup = catalogTokens(tools)
+  const lookup = new Map(oldMentions.map(mention => [mention.token, mention.tool]))
   const savedSetup = new Map(oldMentions.map(mention => [mention.tool_id, mention]))
-  for (const mention of oldMentions) lookup.set(mention.token.toLowerCase(), mention.tool)
   const mentions: PracticeMention[] = []
   for (const token of tokenizePracticeText(body)) {
     if (token.kind !== 'mention') continue
-    const tool = lookup.get(token.text.toLowerCase())
+    const tool = lookup.get(token.text) ?? resolveMentionTool(token.text, tools)
     if (tool) mentions.push({ tool_id: tool.id, token: token.text, tool, position: mentions.length,
       install_command: savedSetup.get(tool.id)?.install_command ?? null, notes: savedSetup.get(tool.id)?.notes ?? null })
   }
@@ -116,10 +107,9 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
       return next
     })
   }
-  const query = anchor?.query.toLowerCase() ?? ''
-  const matches = anchor ? tools.filter(tool => [tool.name, tool.slug, tool.apm_id, ...(tool.aliases ?? []).map(alias => alias.slug)]
-    .some(value => value?.toLowerCase().includes(query))).slice(0, 8) : []
-  const optionsCount = matches.length + (anchor?.query.trim() ? 1 : 0)
+  const matches = anchor ? mentionSuggestions(anchor.query, tools) : []
+  const allowCreate = !!anchor?.query.trim() && !anchor.query.includes('::')
+  const optionsCount = matches.length + Number(allowCreate)
   const canSave = ready && !saving && !uploading && !createAnchor
 
   function showCompletions(value: string, caret: number) {
@@ -143,8 +133,7 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
     }
     setHighlight(-1)
   }
-  function insertTool(tool: CatalogTool, at: Anchor) {
-    const token = '#' + tool.slug
+  function insertTool(tool: CatalogTool, at: Anchor, token = '#' + tool.slug) {
     const suffix = body.slice(at.end)
     const space = !suffix || /^[\p{L}\p{N}#]/u.test(suffix) ? ' ' : ''
     const value = body.slice(0, at.start) + token + space + suffix
@@ -155,8 +144,8 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
   }
   function choose(index: number) {
     if (!anchor) return
-    if (matches[index]) insertTool(matches[index], anchor)
-    else if (anchor.query.trim()) { setCreateAnchor(anchor); setAnchor(null) }
+    if (matches[index]) insertTool(matches[index].tool, anchor, matches[index].token)
+    else if (allowCreate) { setCreateAnchor(anchor); setAnchor(null) }
   }
   function keyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.nativeEvent.isComposing || !anchor || !optionsCount) return
@@ -200,17 +189,17 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
             onKeyUp={event => {if (['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) showCompletions(body, event.currentTarget.selectionStart)}}
             onKeyDown={keyDown} />
           {anchor && optionsCount > 0 && <div className="mention-menu" id="mention-choices" role="listbox" style={{ top: suggestionTop }} aria-label="Tool suggestions">
-            {matches.map((tool, index) => <button key={tool.id} type="button" role="option" id={'mention-choice-'+index}
+            {matches.map((item, index) => <button key={item.token} type="button" role="option" id={'mention-choice-'+index}
               aria-selected={index === highlight} onMouseDown={event => event.preventDefault()} onClick={() => choose(index)}>
-              <strong>{tool.name}</strong> <span>#{tool.slug}</span>
+              <strong>{item.label}</strong> <span>{item.description || item.token}</span>
             </button>)}
-            {anchor.query.trim() && <button type="button" role="option" id={'mention-choice-'+matches.length}
+            {allowCreate && <button type="button" role="option" id={'mention-choice-'+matches.length}
               aria-selected={highlight === matches.length} onMouseDown={event => event.preventDefault()} onClick={() => choose(matches.length)}>
               Create tool “{anchor.query}”
             </button>}
           </div>}
         </div>
-        <p id="mention-help" className="muted">Mention a tool with <kbd>#</kbd> · Use <code>`code`</code> or “quoted prompts”</p></section>
+        <p id="mention-help" className="muted">Mention <kbd>#tool</kbd> or <kbd>#tool::command</kbd> · Use <code>`code`</code> or “quoted prompts”</p></section>
         <details className="writing-install" open={Boolean(generated || hasOverride)}>
           <summary>Install commands</summary>
           <InstallOSPicker />

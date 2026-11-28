@@ -1,3 +1,4 @@
+import { resolveMentionTool } from './mentionIdentity'
 import type { PracticeDefinition } from './practiceDefinition'
 import { normalizeToolIdentifier } from './toolIdentifier'
 import { provisionTool } from './toolService'
@@ -93,8 +94,6 @@ export async function fetchDefinition(
  * already exist in the shared catalog. */
 export async function provisionMentions(definition: PracticeDefinition): Promise<MentionInput[]> {
   const catalog = await listTools()
-  const bySlug = new Map(catalog.flatMap(tool => [tool, ...(tool.aliases ?? [])]
-    .map(entry => [entry.slug, tool] as const)))
   const byPackage = new Map(catalog.flatMap(tool => [tool, ...(tool.aliases ?? [])]
     .filter(entry => entry.apm_id).map(entry => [entry.apm_id, tool] as const)))
   const provisioned = new Map<string, string>()
@@ -105,7 +104,7 @@ export async function provisionMentions(definition: PracticeDefinition): Promise
       const normalized = normalizeToolIdentifier(mention.toolIdentifier)
       tool = byPackage.get(normalized)
     } else {
-      tool = bySlug.get(mention.slug)
+      tool = resolveMentionTool(mention.token, catalog)
     }
     if (!tool && mention.toolIdentifier) {
       const key = normalizeToolIdentifier(mention.toolIdentifier)
