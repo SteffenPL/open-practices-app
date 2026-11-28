@@ -7,7 +7,7 @@ export type PracticeTextToken = {
 
 const quotes: Record<string, string> = { '"': '"', '“': '”' }
 const word = /[\p{L}\p{N}_]/u
-const mention = /^#(?:[\p{L}\p{N}][\p{L}\p{N}_.-]*(?:\/[\p{L}\p{N}_@-]+(?:\.[\p{L}\p{N}_@-]+)*)+|[\p{L}\p{N}][\p{L}\p{N}_-]*)(?:::\/?[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*)?/u
+const mention = /^#(?:[\p{L}\p{N}][\p{L}\p{N}_.-]*(?:\/\.?[\p{L}\p{N}_@-]+(?:\.[\p{L}\p{N}_@-]+)*)+|[\p{L}\p{N}][\p{L}\p{N}_-]*)(?:::\/?[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*)?/u
 
 function quoteEnd(input: string, opening: number, closing: string): number {
   for (let i = opening + 1; i < input.length && input[i] !== '\n'; i++) {

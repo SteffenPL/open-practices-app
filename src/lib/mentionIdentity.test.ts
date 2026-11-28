@@ -10,6 +10,7 @@ describe('qualified mentions', () => {
     expect(tokenizePracticeText(body).filter(t=>t.kind==='mention').map(t=>t.text)).toEqual(['#mattpocock/skills::review','#older::/review'])
     expect(activePracticeMention('#mattpocock/skills::',20)?.query).toBe('mattpocock/skills::')
     expect(activePracticeMention('#other/',7)?.query).toBe('other/')
+    expect(tokenizePracticeText('#openai/skills/skills/.curated/playwright::run.')[0].text).toBe('#openai/skills/skills/.curated/playwright::run')
     expect(tokenizePracticeText('#git.Then')[0].text).toBe('#git')
   })
   it('resolves aliases while keeping package subpaths case-sensitive and ambiguous aliases unlinked', () => {
