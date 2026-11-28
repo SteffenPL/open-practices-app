@@ -1,0 +1,17 @@
+.my-skills { max-width: 48rem; padding-top: clamp(1.5rem,4vw,3.5rem); }
+.app-shell .my-skills > h1 { font: var(--title-weight) clamp(2.5rem,6vw,4rem)/1.1 var(--title-face); letter-spacing: -.045em; }
+.my-skills .skills-intro { margin: .5rem 0 1.8rem; color: var(--app-muted); }
+.my-skills > fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.my-skills section { display: grid; gap: .7rem; margin: 1.4rem 0; padding-top: 1.25rem; border-top: 1px solid var(--app-rule); }
+.my-skills section > button, .skills-draft > button { justify-self: start; }
+.my-skills label { display: grid; gap: .25rem; }
+.my-skills summary { cursor: pointer; }
+.skills-packages { max-height: 14rem; overflow-y: auto; }
+.skills-packages label { display: flex; gap: .6rem; align-items: baseline; padding: .45rem 0; }
+.skills-packages label span { min-width: 0; }
+.skills-packages code { display: block; overflow-wrap: anywhere; }
+.skills-actions, .skills-install { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; font-size: .85rem; }
+.skills-actions a { text-underline-offset: .2em; }
+.skills-file { padding: .6rem 0; border-top: 1px solid var(--app-rule); }
+.skills-file pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
+.skills-draft { display: grid; gap: .65rem; padding: .5rem 0 1rem; }
