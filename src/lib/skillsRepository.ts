@@ -42,8 +42,8 @@ export function githubRepositoryURL(repo: string): string {
   return 'https://github.com/' + repo
 }
 
-export function buildSkillsRepository(repo: string, dependencies: string[], skill?: AuthoredSkill): SkillsRepository {
-  if (!isGitHubRepository(repo)) throw new Error('Enter the GitHub repository as owner/repository.')
+export function buildSkillsManifest(repo: string | null, dependencies: string[]) {
+  if (repo !== null && !isGitHubRepository(repo)) throw new Error('Enter the GitHub repository as owner/repository.')
   const unique = new Map<string, string>()
   for (const dependency of dependencies) {
     const id = dependency.trim()
@@ -51,12 +51,12 @@ export function buildSkillsRepository(repo: string, dependencies: string[], skil
     const [location, ref] = id.split('#')
     const [owner, name, ...path] = location.split('/')
     const root = (owner + '/' + name).toLowerCase()
-    if (root === repo.toLowerCase()) throw new Error('A skills repository cannot depend on itself.')
+    if (root === repo?.toLowerCase()) throw new Error('A skills repository cannot depend on itself.')
     const key = [root, ...path].join('/') + (ref ? '#' + ref : '')
     if (!unique.has(key)) unique.set(key, id)
   }
   const dependencyFragment = Array.from(unique.values(), id => '    - ' + JSON.stringify(id)).join('\n')
-  const packageName = repo.split('/')[1].toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'skills'
+  const packageName = (repo?.split('/')[1] ?? 'my-skills').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'skills'
   const manifest = {
     path: 'apm.yml',
     content: [
@@ -68,7 +68,10 @@ export function buildSkillsRepository(repo: string, dependencies: string[], skil
       '',
     ].join('\n'),
   }
-  if (!skill) return { manifest, dependencyFragment }
+  return { manifest, dependencyFragment }
+}
+
+export function buildSkillFile(skill: AuthoredSkill): RepositoryFile {
   if (skill.name.length > 64 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(skill.name) || /\s/.test(skill.name)) {
     throw new Error('Use up to 64 lowercase letters, digits, and single hyphens for the skill name.')
   }
@@ -78,12 +81,14 @@ export function buildSkillsRepository(repo: string, dependencies: string[], skil
   const frontmatter = ['---', 'name: ' + JSON.stringify(skill.name), 'description: ' + JSON.stringify(description), '---', '', ''].join('\n')
   const instructions = skill.instructions.replace(/\r\n?/g, '\n')
   return {
-    manifest, dependencyFragment,
-    skill: {
-      path: '.apm/skills/' + skill.name + '/SKILL.md',
-      content: frontmatter + instructions + (instructions.endsWith('\n') ? '' : '\n'),
-    },
+    path: '.apm/skills/' + skill.name + '/SKILL.md',
+    content: frontmatter + instructions + (instructions.endsWith('\n') ? '' : '\n'),
   }
+}
+
+export function buildSkillsRepository(repo: string, dependencies: string[], skill?: AuthoredSkill): SkillsRepository {
+  const result = buildSkillsManifest(repo, dependencies)
+  return skill ? {...result, skill: buildSkillFile(skill)} : result
 }
 
 export function githubNewFileURL(repo: string, file: RepositoryFile, branch = 'main'): string | null {
