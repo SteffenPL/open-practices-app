@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { ToolEditor } from '../components/ToolEditor'
+import { InstallOSPicker } from '../components/InstallOSPicker'
 import { toolInstallCommand, useInstallOS } from '../lib/installCommands'
 import { platformFields, toolFields } from '../lib/toolMatching'
 import { CopyCommandButton } from '../components/PracticeCommands'
@@ -142,7 +143,7 @@ export function ToolPage() {
       {tool.apm_id && <p className="tool-package-id"><code>{tool.apm_id}</code></p>}
       <div className="tool-actions">{tool.repo_url && <a href={tool.repo_url} target="_blank" rel="noreferrer">Source ↗</a>}
         {tool.website_url && <a href={tool.website_url} target="_blank" rel="noreferrer">Website ↗</a>}</div>
-      {command && <section className="tool-section"><h2>Install command</h2><div className="tool-install"><pre><code>{command}</code></pre><CopyCommandButton text={command} label="Copy install command"/></div></section>}
+      {(tool.install_command || Object.values(tool.install_commands ?? {}).some(Boolean)) && <section className="tool-section"><h2>Install command</h2><InstallOSPicker />{command ? <div className="tool-install"><pre><code>{command}</code></pre><CopyCommandButton text={command} label="Copy install command"/></div> : <p className="muted">No command listed for this platform.</p>}</section>}
       <section className="tool-section"><h2>Practices using this tool</h2>{data.practices.length ? data.practices.map(p => <Link key={p.id} to={`/practice/${p.id}`}>{p.title}</Link>) : <p className="muted">No practices cite this tool yet.</p>}</section>
       <History revisions={data.history}/>
       {session && !tool.merged_into && <MergePanel tool={tool} onMerged={id => navigate(`/tools/${id}`)}/>}

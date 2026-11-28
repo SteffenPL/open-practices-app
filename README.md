@@ -13,7 +13,7 @@ Choose **New practice** and write a title and key message. For example:
 
 > I use #pdf to extract the text, then ask “Which dates need checking?” and compare the result with `dates.txt`.
 
-Select a tool from the suggestions after typing `#`, or create it there. Mentioned tools supply the copyable install block in order of first appearance. The operating system selector at the bottom of each page remembers your choice in this browser. Authors can customize the entire block for one operating system and restore the generated version later. Text between backticks is code. Text between paired double quotes is a prompt.
+Select a tool from the suggestions after typing `#`, or create it there. Mentioned tools supply the copyable install block in order of first appearance. Windows, macOS, and Linux appear below each install block. Selecting one remembers your choice in this browser. The feed previews up to three lines. Choose **Read more** to see the full script or **Copy** to copy it directly. Authors can customize the entire block for one operating system and restore the generated version later. Text between backticks is code. Text between paired double quotes is a prompt.
 
 Choose **New tool** to contribute a catalog entry directly. A tool can have an APM package identifier, a source link, a project website, and a default install command with optional Windows, macOS, and Linux variants. The tool page shows its edit history. Generated blocks follow the catalog. A manually customized block stays as its author wrote it.
 
