@@ -57,6 +57,8 @@ it('previews preserved local edits, invalidates stale reviews, and only writes o
   click('Commit to GitHub')
   await waitFor(()=>expect(pushGitHubSkills).toHaveBeenCalledWith(snapshot,[{path:'apm.yml',content:'updated'}],'Update skills',neverPersist))
   expect((await screen.findByRole('link',{name:/View commit/})).getAttribute('href')).toBe('https://github.com/writer/skills/commit/'+'b'.repeat(40))
+  click('Preview changes')
+  expect(planSkillsChanges).toHaveBeenLastCalledWith({...local,selected_packages:[]},[{path:'apm.yml',content:'updated'}],{...local,selected_packages:[]})
   click('Disconnect')
   expect((screen.getByLabelText('Fine-grained GitHub token') as HTMLInputElement).value).toBe('')
   expect(screen.queryByRole('button',{name:'Preview changes'})).toBeNull()

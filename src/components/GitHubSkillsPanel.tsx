@@ -61,7 +61,11 @@ export function GitHubSkillsPanel({config, branch, dirty, onImport}: {
       const updated = new Map(base.files.map(file=>[file.path,file]))
       for (const file of files) updated.set(file.path,file)
       const next = {...base,sha,files:[...updated.values()]}
-      setBase(next); setBaseline(baseline ? config : undefined); setReview(null)
+      const writtenDrafts = new Set(config.drafts.map(draft => draft.name))
+      const committed = importSkillsRepository(next.repo,next.files)
+      setBase(next)
+      setBaseline({...config, drafts:committed.drafts.filter(draft => writtenDrafts.has(draft.name))})
+      setReview(null)
     } catch(cause) {setError(cause instanceof Error ? cause.message : 'Could not commit the reviewed files.'); setReview(null)}
     finally {lock.current=false;setBusy(false)}
   }
@@ -86,7 +90,7 @@ export function GitHubSkillsPanel({config, branch, dirty, onImport}: {
           <button type="button" onClick={()=>{onImport(incoming.config);setBase(incoming.snapshot);setBaseline(incoming.config);setIncoming(null);setStatus('Imported into the editor.')}}>
             {dirty ? 'Replace unsaved edits with import' : 'Import into editor'}
           </button>
-          <button type="button" onClick={()=>{setBase(incoming.snapshot);setBaseline(undefined);setIncoming(null);setStatus('Kept your editor contents.')}}>Keep my editor contents</button>
+          <button type="button" onClick={()=>{setBase(incoming.snapshot);setIncoming(null);setStatus('Kept your editor contents.')}}>Keep my editor contents</button>
         </div>
       </div>}
       {base && <div className="skills-sync-review">
