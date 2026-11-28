@@ -10,7 +10,7 @@ title: Check the figures in a PDF
 I use #pdf to extract the text. I ask “Which figures changed?” and compare the result with `figures.txt`.
 ~~~
 
-A tool mention uses the catalog handle, such as `#pdf`. Repeated mentions of one tool share one setup entry. Backticks delimit code, and paired straight or curly double quotes delimit prompts. Hashes inside either span stay literal.
+A tool mention can use a catalog handle, a unique alias, or a package identifier. For example, `#mattpocock/skills::grill-me` refers to one command in the `mattpocock/skills` package. References to different commands in the same package contribute one install command to the generated script. Backticks delimit code, and paired straight or curly double quotes delimit prompts. Hashes inside either span stay literal.
 
 ## Optional install commands and notes
 
@@ -24,7 +24,7 @@ command: apm install anthropics/skills/skills/pdf
 notes: Keep the original document next to the extracted text.
 ~~~
 
-The command belongs to this practice. An update to the catalog's suggested command does not alter the published command.
+The catalog supplies the default install script for each operating system. Older per-tool setup entries remain readable. API clients can also send a practice-level `install_overrides` object alongside the definition. Each key (`linux`, `windows`, or `macos`) replaces the complete block for that platform.
 
 ## Compatibility
 
