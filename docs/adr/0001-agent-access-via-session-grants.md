@@ -1,5 +1,7 @@
 # Agent access via short-lived session grants instead of personal tokens
 
+Superseded by [ADR 0003](./0003-scoped-agent-grants.md).
+
 AI agents need to create and edit Practices on behalf of a user. Standard practice would issue named, hashed, revocable personal access tokens verified by a server (Edge Function). We decided instead to grant agents a copy of the user's current Supabase session token, which expires after roughly one hour: no token storage, hashing, or revocation subsystem at all — RLS already treats the bearer as the user.
 
 ## Considered Options
