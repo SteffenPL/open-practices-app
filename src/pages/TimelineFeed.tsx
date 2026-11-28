@@ -40,7 +40,7 @@ function PracticePost({ practice, tools, mentions }: {
       <p>{practice.mention_format
         ? <PracticeText text={practice.body} mentions={mentions} preview />
         : teaser(bodyParts.opening, 220)}</p>
-      {practice.mention_format && <InstallList mentions={mentions} title={practice.title} overrides={practice.install_overrides} />}
+      <InstallList compact legacyTools={practice.mention_format ? undefined : tools} mentions={mentions} title={practice.title} overrides={practice.install_overrides} />
       {image && <Link to={`/practice/${practice.id}`} className="timeline-post-image-link" tabIndex={-1} aria-hidden="true"><img className="timeline-post-image" src={image} alt="" loading="lazy" /></Link>}
       <div className="timeline-post-foot">
       {practice.author?.avatar_url

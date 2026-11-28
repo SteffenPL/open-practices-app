@@ -1,6 +1,6 @@
-import { PracticeText } from '../components/PracticeText'
-import { InstallList, MentionNotes } from '../components/MentionSetup'
 import { LegacyPracticeNotes } from '../components/LegacyPracticeNotes'
+import { PracticeText } from '../components/PracticeText'
+import { InstallList } from '../components/MentionSetup'
 import { listPracticeMentions, type PracticeMention } from '../lib/mentionService'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -13,10 +13,10 @@ import {
   imageUrl,
   isSignificantUpdate,
 } from '../lib/practiceService'
-import { getElements } from '../lib/elementService'
+import { getElements, type PracticeToolLink } from '../lib/elementService'
 import { formatDate } from '../lib/markdown'
 import { sourceDisplayUrl } from '../lib/importService'
-import type { Element, Practice } from '../lib/types'
+import type { Practice } from '../lib/types'
 import { CommentsSection } from '../components/CommentsSection'
 import { SyncButton } from '../components/SyncButton'
 import { splitGuidedPracticeBody } from './guidedPracticeContent'
@@ -26,7 +26,7 @@ export function PracticePage() {
   const { session } = useAuth()
   const navigate = useNavigate()
   const [practice, setPractice] = useState<Practice | null>(null)
-  const [elements, setElements] = useState<Element[]>([])
+  const [elements, setElements] = useState<Awaited<ReturnType<typeof getElements>>>([])
   const [mentions, setMentions] = useState<PracticeMention[]>([])
   const [error, setError] = useState<string | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -40,12 +40,12 @@ export function PracticePage() {
     setError(null)
     getPractice(id)
       .then(async post => {
-        const [originalElements, linked] = post ? await Promise.all([
+        const [legacy, linked] = post ? await Promise.all([
           getElements(id), post.mention_format ? listPracticeMentions(id) : [],
         ]) : [[], []]
         if (active) {
           setPractice(post)
-          setElements(originalElements)
+          setElements(legacy)
           setMentions(linked)
           if (!post) setError('Practice not found.')
         }
@@ -76,6 +76,7 @@ export function PracticePage() {
     )
   }
 
+  const legacyTools: PracticeToolLink[] = elements.flatMap(element => element.options.flatMap(option => option.tool ? [option.tool] : []))
   const isAuthor = session?.user?.id === practice.author_id
   const image = imageUrl(practice.image_path)
   const bodyParts = splitGuidedPracticeBody(practice.body)
@@ -93,9 +94,8 @@ export function PracticePage() {
         {practice.mention_format
           ? <p className="practice-key-message"><PracticeText text={practice.body} mentions={mentions} /></p>
           : <div className="markdown-body"><Markdown remarkPlugins={[remarkGfm]}>{bodyParts.opening}</Markdown></div>}
-        {practice.mention_format && <InstallList mentions={mentions} title={practice.title} overrides={practice.install_overrides} />}
+        <InstallList legacyTools={practice.mention_format ? undefined : legacyTools} mentions={mentions} title={practice.title} overrides={practice.install_overrides} />
         {image && <img className="practice-image" src={image} alt="" />}
-        <MentionNotes mentions={mentions} />
         <LegacyPracticeNotes elements={elements} />
         {!practice.mention_format && bodyParts.closing && <div className="markdown-body practice-closing">
           <Markdown remarkPlugins={[remarkGfm]}>{bodyParts.closing}</Markdown>

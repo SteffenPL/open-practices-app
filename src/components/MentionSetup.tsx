@@ -1,33 +1,33 @@
-import { Link } from 'react-router-dom'
 import type { PracticeMention } from '../lib/mentionService'
-import { generateInstallBlock, useInstallOS, type InstallCommands } from '../lib/installCommands'
+import type { PracticeToolLink } from '../lib/elementService'
+import { generateInstallBlock, installOSLabels, toolInstallCommand, useInstallOS, type InstallCommands, type InstallOS } from '../lib/installCommands'
 import { CopyCommandButton } from './PracticeCommands'
-import { PracticeText } from './PracticeText'
+import { InstallOSPicker } from './InstallOSPicker'
 
-import { distinctPracticeTools } from '../lib/distinctPracticeTools'
-
-export function InstallList({ mentions, title, overrides }: {
+export function InstallList({ mentions, title, overrides, legacyTools, compact = false }: {
   mentions: PracticeMention[]
   title: string
   overrides?: InstallCommands
+  legacyTools?: PracticeToolLink[]
+  compact?: boolean
 }) {
   const [os] = useInstallOS()
-  const text = overrides?.[os] ?? generateInstallBlock(mentions, os)
-  if (!text.trim()) return null
-  return <div className="timeline-cli">
-    <pre aria-label="Install list">{text}</pre>
-    <CopyCommandButton text={text} label={`Copy commands for ${title}`} />
+  function commandsFor(platform: InstallOS) {
+    if (overrides?.[platform] !== undefined) return overrides[platform]
+    if (legacyTools) return [...new Set(legacyTools.map(tool => toolInstallCommand(tool, platform)).filter(Boolean))].join('\n')
+    return generateInstallBlock(mentions, platform)
+  }
+  const text = commandsFor(os)
+  if (!text.trim() && !(Object.keys(installOSLabels) as InstallOS[]).some(platform => commandsFor(platform).trim())) return null
+  const lines = text.split(/\r?\n/)
+  const clipped = compact && lines.length > 3
+  return <div className={compact ? 'install-block install-block-compact' : 'install-block'}>
+    {text.trim()
+      ? <pre aria-label="Install list">{clipped ? lines.slice(0, 3).join('\n') : text}</pre>
+      : <p className="install-unavailable">No command for {installOSLabels[os]}</p>}
+    <div className="install-block-actions">
+      <InstallOSPicker />
+      {text.trim() && <CopyCommandButton text={text} label={`Copy ${clipped ? 'all ' : ''}commands for ${title}`} />}
+    </div>
   </div>
-}
-
-export function MentionNotes({ mentions }: { mentions: PracticeMention[] }) {
-  const setups = distinctPracticeTools(mentions).filter(mention => mention.notes?.trim())
-  if (!setups.length) return null
-  return <section className="practice-setup-notes" aria-label="Setup notes">
-    <h2>Setup notes</h2>
-    {setups.map(mention => <div className="practice-note" key={mention.tool_id}>
-      <Link to={`/tools/${mention.tool.id}`}>{mention.tool.name}</Link>
-      <p><PracticeText text={mention.notes!} mentions={mentions} /></p>
-    </div>)}
-  </section>
 }

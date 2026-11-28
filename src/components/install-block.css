@@ -1,0 +1,12 @@
+.install-platforms { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: .55rem; }
+.app-shell .install-platforms button, .app-shell .install-block-actions button {
+  min-height: 0; margin: 0; padding: .18rem 0; border: 0; border-radius: 0;
+  background: transparent; color: var(--app-muted); font: inherit; font-size: .72rem; box-shadow: none;
+}
+.app-shell .install-platforms button[aria-pressed=true] { color: var(--app-ink); text-decoration: underline; text-underline-offset: .2em; }
+.install-block { min-width: 0; margin-top: .5rem; }
+.install-block pre { margin: 0; padding: 0; border: 0; background: none; color: var(--app-muted); white-space: pre-wrap; overflow-wrap: anywhere; font: .8rem/1.45 ui-monospace, monospace; }
+.install-block-actions { display: flex; align-items: baseline; flex-wrap: wrap; gap: 1rem; }
+
+.install-block-compact pre { max-height: 4.35em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.install-block .install-unavailable { color: var(--app-muted); font-size: .78rem; }
