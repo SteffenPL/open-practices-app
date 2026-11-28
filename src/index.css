@@ -8,8 +8,8 @@ body { min-width: 320px; min-height: 100vh; margin: 0; }
   transition: color .2s ease, background-color .2s ease;
 }
 .app-shell.app-theme-night {
-  --app-paper: #242321; --app-surface: #2e2c29; --app-ink: #f3f0e9; --app-muted: #b7aea0;
-  --app-rule: #49453f; --app-accent: #e2ad76; --app-pop: #cfaa68; --app-error: #f19a8b;
+  --app-paper: #0c0d0f; --app-surface: #17191d; --app-ink: #f2f3f5; --app-muted: #a4a8b0;
+  --app-rule: #33363c; --app-accent: #ff903e; --app-pop: #ffab68; --app-error: #ff9696;
   color-scheme: dark;
 }
 .app-shell *, .app-shell *::before, .app-shell *::after { box-sizing: border-box; }
@@ -212,3 +212,11 @@ body { min-width: 320px; min-height: 100vh; margin: 0; }
 
 .install-preference { max-width: 70rem; margin: 1rem auto 0; padding: 1rem; text-align: center; }
 .install-preference select { margin-left: .25rem; padding: .3rem; font: inherit; color: var(--app-ink); background: var(--app-paper); border: 0; border-bottom: 1px solid var(--app-rule); }
+
+.app-theme-night .site-theme-switch,
+.app-theme-night .updated-badge,
+.app-theme-night .timeline-post-tags button,
+.app-theme-night .timeline-topic-sidebar .timeline-topic-option.is-active {
+  background: var(--app-surface);
+}
+.app-theme-night .timeline-topic-swatch-3 { background: var(--app-pop); }
