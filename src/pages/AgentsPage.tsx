@@ -7,14 +7,21 @@ const base =
   '/functions/v1/agent'
 const scopes = {
   read: 'Read public practices and tools',
-  'my-skills': 'Read and edit my private My Skills collection',
+  'my-skills': 'Read and edit all my private skill setups',
   practices: 'Publish and edit my practices',
   catalog: 'Contribute tools and commands',
   contribute: 'Contribute tools and my practices',
 }
 type Scope = keyof typeof scopes
 type Grant = { id: string; scope: Scope; expires_at: string }
-const prompts = [
+function privateSetupTask(id: string | null) {
+  const selected = id === 'default' || (id && /^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i.test(id))
+  const path = selected ? '/my-skills/setups/' + id : '/my-skills/setups/:id'
+  const choose = selected ? 'Work only on the setup at ' + path + '.' :
+    'List my saved setups with GET /my-skills/setups and ask which one to work on. Use its id in place of :id.'
+  return choose + ' Read it with GET ' + path + '. Keep existing content and draft IDs. Show me proposed changes before writing. After approval PUT ' + path + ' with the full config and expected_version from the read. If the API returns 409, reload and reconcile before retrying.'
+}
+const prompts = (setup: string | null) => [
   [
     'Find a tool',
     'Search published workflows, tools and commands.',
@@ -27,8 +34,8 @@ const prompts = [
   ],
   [
     'Work with my private skills',
-    'Review your saved packages and skill drafts.',
-    'Use my dedicated my-skills grant with GET /my-skills to read my private collection. Keep existing content and draft IDs. Show me the proposed changes before writing. After approval PUT /my-skills with the full config and expected_version from the read. If the API returns 409, reload and reconcile before retrying.',
+    'Review a private setup’s packages and skill drafts.',
+    privateSetupTask(setup),
   ],
   [
     'Update the catalog',
@@ -42,10 +49,18 @@ const instruction = (text: string) =>
 
 export function AgentsPage() {
   const { session, loading, signInWithGoogle } = useAuth()
-  const [scope, setScope] = useState<Scope>(() => {
-    const query = window.location.hash.split('?', 2)[1] ?? window.location.search
-    return new URLSearchParams(query).get('scope') === 'my-skills' ? 'my-skills' : 'read'
-  })
+  const linkedQuery = () => new URLSearchParams(window.location.hash.split('?',2)[1] ?? window.location.search)
+  const [setup, setSetup] = useState(() => linkedQuery().get('setup'))
+  const [scope, setScope] = useState<Scope>(() => linkedQuery().get('scope') === 'my-skills' ? 'my-skills' : 'read')
+  useEffect(() => {
+    const readLink = () => {
+      const next = linkedQuery()
+      setSetup(next.get('setup'))
+      setScope(next.get('scope') === 'my-skills' ? 'my-skills' : 'read')
+    }
+    window.addEventListener('hashchange',readLink)
+    return () => window.removeEventListener('hashchange',readLink)
+  },[])
   const [grants, setGrants] = useState<Grant[]>([])
   const [issued, setIssued] = useState<(Grant & { token: string }) | null>(null)
   const [busy, setBusy] = useState(false)
@@ -208,7 +223,7 @@ export function AgentsPage() {
             </>
           )}
         <h2>Prompts to copy</h2>
-        {prompts.map(([title, description, text]) => (
+        {prompts(setup).map(([title, description, text]) => (
           <section key={title}>
             <div
               style={{
@@ -240,7 +255,9 @@ export function AgentsPage() {
             style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
           ><code>{'curl -sS -H "Authorization: Bearer $OPEN_PRACTICES_TOKEN" '+base+'/me'}</code></pre>
           <ul>
-            <li><code>GET /my-skills</code> reads your private configuration with a dedicated My Skills grant. <code>PUT /my-skills</code> saves the full configuration with its <code>expected_version</code>. A 409 means another edit was saved first.</li>
+            <li>A My Skills grant applies to all your private setups. <code>GET /my-skills/setups</code> lists them. Create one with <code>POST /my-skills/setups</code>, a name, and a request UUID to reuse on retries.</li>
+            <li><code>GET /my-skills/setups/:id</code> reads a setup. Use <code>PUT</code> with the full config or <code>PATCH</code> with a new name. Include the latest <code>expected_version</code> for both. If another edit arrives first, reload the setup and reconcile your changes.</li>
+            <li><code>GET /my-skills</code> and <code>PUT /my-skills</code> access your default setup.</li>
             <li>
               <code>GET /tools?q=…</code> searches tools and commands.{' '}
               <code>GET /tools/:id</code> returns an entry. Use{' '}

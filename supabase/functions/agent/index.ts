@@ -1,3 +1,4 @@
+import { mySkillsRoute } from './mySkills.ts'
 import { mentionBase, resolveMentionTool } from '../../../src/lib/mentionIdentity.ts'
 import { authenticate, issueGrant, scopes } from './access.ts'
 import { type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
@@ -15,7 +16,7 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
 }
 
-interface Payload {
+interface Payload extends Record<string,unknown> {
   config?: Record<string,unknown>
   expected_version?: number
   definition?: string
@@ -165,9 +166,9 @@ Deno.serve(async (req) => {
     return json(401, { error: 'Missing, expired or revoked agent grant.' })
   }
   const { client, userId } = access
-  const personal = segments.length === 1 && segments[0] === 'my-skills'
+  const personal = segments[0] === 'my-skills'
   if (personal && access.scope !== 'my-skills') {
-    return json(403,{error:'Generate a dedicated My Skills grant to access your private collection.'})
+    return json(403,{error:'Generate a dedicated My Skills grant to access your private setups.'})
   }
   const limit = personal ? 4100000 : 500000
   let body: Payload = {}
@@ -243,7 +244,13 @@ Deno.serve(async (req) => {
           },
         },
         my_skills: {
-          required_scope:'my-skills', read:'GET /my-skills', replace:'PUT /my-skills',
+          required_scope:'my-skills',
+          list:'GET /my-skills/setups returns {setups:[{id,name,is_default,version}]}',
+          create:'POST /my-skills/setups with {name,request_id} returns new setup metadata; reuse request_id on retry',
+          read:'GET /my-skills/setups/:id returns {config,version}',
+          replace:'PUT /my-skills/setups/:id with the body below',
+          rename:'PATCH /my-skills/setups/:id with {name,expected_version}',
+          default_setup:'GET and PUT /my-skills address the same setup as /my-skills/setups/default',
           body:{expected_version:'integer returned by GET',config:{repo:'owner/repository or empty',selected_packages:['owner/repo/path'],drafts:[{id:'stable draft id',name:'draft-name',description:'Description',body:'Markdown'}]}},
           conflicts:'409 means reload the current snapshot and reconcile your changes before saving.'
         },
@@ -253,23 +260,16 @@ Deno.serve(async (req) => {
       })
     }
     if (personal) {
-      if (req.method === 'GET') {
-        const {data,error}=await client.from('my_skills_configs').select('config,version').eq('owner_id',userId).maybeSingle()
-        if(error) throw Error(error.message)
-        return json(200,data ?? {config:{repo:'',selected_packages:[],drafts:[]}, version:0})
+      const route = mySkillsRoute(req.method,segments,requestBody,access.scope)
+      if ('error' in route) return json(route.status,{error:route.error})
+      const query = client.rpc(route.rpc,route.args)
+      const {data,error} = await (route.collection ? query : query.single())
+      if (error) {
+        const status = error.code === 'PT409' || error.code === '23505' ? 409 :
+          error.code === 'PT404' || error.code === 'PGRST116' ? 404 : error.code === '42501' ? 403 : 400
+        return json(status,{error:error.message})
       }
-      if (req.method === 'PUT') {
-        const {config,expected_version}=requestBody
-        if (Object.keys(requestBody).some(k=>!['config','expected_version'].includes(k)) ||
-            !config || Array.isArray(config) || typeof config !== 'object' ||
-            typeof expected_version !== 'number' || !Number.isInteger(expected_version) || expected_version<0 || expected_version>2147483647) {
-          return json(400,{error:'Supply config and a nonnegative integer expected_version from GET /my-skills.'})
-        }
-        const {data,error}=await client.rpc('save_my_skills_config',{p_config:config,p_expected_version:expected_version}).single()
-        if(error)return json(error.code==='PT409' ? 409 : 400,{error:error.message})
-        return json(200,data)
-      }
-      return json(405,{error:'Use GET or PUT for My Skills.'})
+      return json(route.created ? 201 : 200,route.collection ? {setups:data} : data)
     }
     if (resource === 'grants') {
       if (!access.browserSession) {

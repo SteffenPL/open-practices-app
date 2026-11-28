@@ -50,3 +50,18 @@ it('preselects the linked My Skills scope without issuing a grant',async()=>{
     window.location.hash=''
   }
 })
+
+it('copies an exact setup route while keeping a My Skills grant owner-wide', async()=>{
+  const id='2c5b88fc-ac60-4ab0-b86e-e7c33fd1a77c'
+  window.location.hash='/agents?scope=my-skills&setup='+id
+  const writeText=vi.fn()
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json({grants:[]})))
+  vi.stubGlobal('navigator',{clipboard:{writeText}})
+  try {
+    render(<AgentsPage/>)
+    fireEvent.click(screen.getByRole('button',{name:'Copy prompt: Work with my private skills'}))
+    expect(writeText.mock.calls[0][0]).toContain('PUT /my-skills/setups/'+id)
+    expect(screen.getByRole('option',{name:'Read and edit all my private skill setups'})).toBeTruthy()
+    await waitFor(()=>expect(fetch).toHaveBeenCalled())
+  } finally {window.location.hash=''}
+})
