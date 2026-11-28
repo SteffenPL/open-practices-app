@@ -21,3 +21,32 @@ it('creates a read-only grant deliberately and keeps credentials out of prompts'
   expect(api.mock.calls.find(([,opts])=>opts.method==='POST')?.[1].body).toBe('{"scope":"read"}')
   expect(screen.queryByText('opaque-secret')).toBeNull()
 })
+
+it('requests private collection access only after selecting the dedicated scope', async()=>{
+  const api=vi.fn().mockImplementation(async (_url,opts)=>Response.json(opts.method==='GET'?{grants:[]}:{id:'one',scope:'my-skills',expires_at:'2026-11-28T00:00:00Z',token:'opaque'}))
+  vi.stubGlobal('fetch',api)
+  const writeText=vi.fn()
+  vi.stubGlobal('navigator',{clipboard:{writeText}})
+  render(<AgentsPage/>)
+  fireEvent.change(screen.getByRole('combobox'),{target:{value:'my-skills'}})
+  fireEvent.click(screen.getByRole('button',{name:'Generate grant'}))
+  await screen.findByRole('button',{name:'Copy grant'})
+  expect(JSON.parse(api.mock.calls.find(([,opts])=>opts.method==='POST')?.[1].body)).toEqual({scope:'my-skills'})
+  fireEvent.click(screen.getByRole('button',{name:'Copy prompt: Work with my private skills'}))
+  expect(writeText.mock.calls[0][0]).toContain('expected_version')
+  expect(writeText.mock.calls[0][0]).not.toContain('opaque')
+})
+
+it('preselects the linked My Skills scope without issuing a grant',async()=>{
+  window.location.hash='/agents?scope=my-skills'
+  const api=vi.fn().mockResolvedValue(Response.json({grants:[]}))
+  vi.stubGlobal('fetch',api)
+  try {
+    render(<AgentsPage/>)
+    expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('my-skills')
+    await waitFor(()=>expect(api).toHaveBeenCalled())
+    expect(api.mock.calls.every(([,opts])=>opts.method==='GET')).toBe(true)
+  } finally {
+    window.location.hash=''
+  }
+})

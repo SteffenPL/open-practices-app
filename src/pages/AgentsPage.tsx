@@ -6,7 +6,8 @@ const base =
   String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '') +
   '/functions/v1/agent'
 const scopes = {
-  read: 'Read only',
+  read: 'Read public practices and tools',
+  'my-skills': 'Read and edit my private My Skills collection',
   practices: 'Publish and edit my practices',
   catalog: 'Contribute tools and commands',
   contribute: 'Contribute tools and my practices',
@@ -25,6 +26,11 @@ const prompts = [
     'Help me turn my workflow into a short Open Practice. Look up each mentioned tool first. Draft the title and key message, using #tool or #tool::command where appropriate. Show me the Markdown and any platform-specific install block, then publish after I approve. Reuse the same request_id when retrying.',
   ],
   [
+    'Work with my private skills',
+    'Review your saved packages and skill drafts.',
+    'Use my dedicated my-skills grant with GET /my-skills to read my private collection. Keep existing content and draft IDs. Show me the proposed changes before writing. After approval PUT /my-skills with the full config and expected_version from the read. If the API returns 409, reload and reconcile before retrying.',
+  ],
+  [
     'Update the catalog',
     'Review a proposed tool entry or catalog edit.',
     'Search the Open Practices catalog for this tool and its aliases before creating an entry. Show me your proposed URLs, aliases, descriptions and commands. After I approve, create it or update the existing item using its expected_updated_at value.',
@@ -36,7 +42,10 @@ const instruction = (text: string) =>
 
 export function AgentsPage() {
   const { session, loading, signInWithGoogle } = useAuth()
-  const [scope, setScope] = useState<Scope>('read')
+  const [scope, setScope] = useState<Scope>(() => {
+    const query = window.location.hash.split('?', 2)[1] ?? window.location.search
+    return new URLSearchParams(query).get('scope') === 'my-skills' ? 'my-skills' : 'read'
+  })
   const [grants, setGrants] = useState<Grant[]>([])
   const [issued, setIssued] = useState<(Grant & { token: string }) | null>(null)
   const [busy, setBusy] = useState(false)
@@ -231,6 +240,7 @@ export function AgentsPage() {
             style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
           ><code>{'curl -sS -H "Authorization: Bearer $OPEN_PRACTICES_TOKEN" '+base+'/me'}</code></pre>
           <ul>
+            <li><code>GET /my-skills</code> reads your private configuration with a dedicated My Skills grant. <code>PUT /my-skills</code> saves the full configuration with its <code>expected_version</code>. A 409 means another edit was saved first.</li>
             <li>
               <code>GET /tools?q=…</code> searches tools and commands.{' '}
               <code>GET /tools/:id</code> returns an entry. Use{' '}

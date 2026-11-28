@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { grantExpiry, isGrant, openGrant, sealGrant } from './grant.ts'
 
-export type Scope = 'read' | 'practices' | 'catalog' | 'contribute'
+export type Scope = typeof scopes[number]
 export interface Access {
   client: SupabaseClient
   userId: string
@@ -9,7 +9,7 @@ export interface Access {
   browserSession: string | null
   grantId: string | null
 }
-export const scopes = ['read', 'practices', 'catalog', 'contribute'] as const
+export const scopes = ['read', 'practices', 'catalog', 'contribute', 'my-skills'] as const
 export async function authenticate(req: Request): Promise<Access | null> {
   const token = req.headers.get('Authorization')?.match(/^Bearer (\S+)$/i)?.[1]
   if (!token || token.length > 20000) return null
