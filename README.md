@@ -19,9 +19,9 @@ Use `#mattpocock/skills::grill-me` to cite a command from an entire package. Mul
 
 Choose **New tool** to contribute a catalog entry directly. Contributors can maintain commands, aliases, and ordered URLs in the web catalog. The first URL is the primary link. A tool can have an APM package identifier, a source link, a project website, and a default install command with optional Windows, macOS, and Linux variants. The tool page shows its edit history. Generated blocks follow the catalog. A manually customized block stays as its author wrote it.
 
-## Manage your own skills repository
+## Manage your setups
 
-Open [My skills](https://steffenpl-share.exe.xyz/open-practices/#/my-skills) to select catalog packages or write skills. **Save collection** saves a private draft. **Download ZIP** exports its manifest and skill folders. **API access** opens the grant page with the private collection scope selected.
+Open [My setups](https://steffenpl-share.exe.xyz/open-practices/#/my-setups) to select catalog packages or write skills. Start with one setup. Create another when you want a separate manifest, skill list, or GitHub repository. **Save collection** saves a private draft. **Download ZIP** exports its manifest and skill folders. **API access** opens the grant page with the private collection scope selected.
 
 GitHub is optional. Leave Repository empty to work entirely through ZIP or API. Enter an `owner/repository` and branch to **Import from GitHub**. Public imports need no token. A fine-grained token for the selected repository enables private reads and, with Contents write permission, **Publish to GitHub**. Publishing sends the affected files in one commit. If the branch changes, the app asks you to import again.
 

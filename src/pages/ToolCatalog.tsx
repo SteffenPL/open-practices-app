@@ -155,7 +155,7 @@ export function ToolPage() {
       <div className="tool-heading"><h1>{tool.name}</h1>{!tool.merged_into && <button onClick={() => setEditing(true)}>Edit tool</button>}</div>
       {tool.merged_into && <p>This entry was merged. <Link to={`/tools/${tool.merged_into}`}>Open the surviving tool</Link></p>}
       {tool.description && <p className="tool-intro">{tool.description}</p>}
-      {tool.apm_id && <p className="tool-package-id"><code>{tool.apm_id}</code>{!tool.merged_into && isPackageIdentifier(tool.apm_id) && <> · <Link to={'/my-skills?add='+encodeURIComponent(tool.apm_id)}>Add to My skills</Link></>}</p>}
+      {tool.apm_id && <p className="tool-package-id"><code>{tool.apm_id}</code>{!tool.merged_into && isPackageIdentifier(tool.apm_id) && <> · <Link to={'/my-setups?add='+encodeURIComponent(tool.apm_id)}>Add to setup</Link></>}</p>}
       {Boolean(tool.name_aliases?.length) && <p>Also known as {tool.name_aliases!.join(', ')}</p>}
       <div className="tool-actions">{toolURLs(tool).map((url, index) => <a key={url} aria-label={(index === 0 ? 'Primary link: ' : '') + url} href={url} target="_blank" rel="noreferrer">{url.replace(/^https?:\/\//i, '').replace(/\/$/, '')} ↗</a>)}</div>
       {(tool.install_command || Object.values(tool.install_commands ?? {}).some(Boolean)) && <section className="tool-section"><h2>Install command</h2><InstallOSPicker />{command ? <div className="tool-install"><pre><code>{command}</code></pre><CopyCommandButton text={command} label="Copy install command"/></div> : <p className="muted">No command listed for this platform.</p>}</section>}

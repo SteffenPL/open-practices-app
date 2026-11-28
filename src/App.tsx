@@ -52,7 +52,8 @@ function Shell() {
         <Route path="/tools" element={<CatalogPage />} />
         <Route path="/tools/new" element={<NewToolPage />} />
         <Route path="/tools/:id" element={<ToolPage />} />
-        <Route path="/my-skills" element={<MySkillsPage />} />
+        <Route path="/my-skills" element={<Navigate replace to={{ pathname: "/my-setups", search: searchParams.toString() }} />} />
+        <Route path="/my-setups" element={<MySkillsPage />} />
         <Route path="/intro" element={<IntroductionPage />} />
         <Route path="/agents" element={<AgentsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
