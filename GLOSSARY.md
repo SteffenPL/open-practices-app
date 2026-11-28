@@ -30,3 +30,7 @@ _Avoid_: Webhook, auto-sync
 
 **Agent Access**:
 A short-lived, revocable credential permitting specific Open Practices API operations on behalf of a signed-in contributor.
+
+**Setup**
+
+A private collection of APM packages and personal skills that produces one installable manifest. A contributor can keep several setups and connect each to its own GitHub repository.
