@@ -7,7 +7,7 @@ import { listFeedMentions, type PracticeMention } from '../lib/mentionService'
 
 const PAGE_SIZE = 10
 
-export function TimelinePage({ searchQuery }: { searchQuery: string }) {
+export function TimelinePage({ searchQuery, onSearchChange }: { searchQuery: string; onSearchChange: (value: string) => void }) {
   const [practices, setPractices] = useState<Practice[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -52,6 +52,7 @@ export function TimelinePage({ searchQuery }: { searchQuery: string }) {
       tools={tools}
       mentions={mentions}
       searchQuery={searchQuery}
+      onSearchChange={onSearchChange}
       loading={loading}
       loadingMore={loadingMore}
       error={error}

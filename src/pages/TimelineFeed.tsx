@@ -1,3 +1,4 @@
+import { ToolMentionLink } from '../components/ToolMentionLink'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { formatDate, teaser } from '../lib/markdown'
@@ -14,6 +15,7 @@ type Props = {
   practices: Practice[]
   tools: Record<string, PracticeToolLink[]>
   mentions: Record<string, PracticeMention[]>
+  onSearchChange: (value: string) => void
   searchQuery: string
   loading: boolean
   loadingMore: boolean
@@ -48,7 +50,7 @@ function PracticePost({ practice, tools, mentions }: {
         : <span className="timeline-avatar timeline-avatar-initial" aria-hidden="true">{authorName.slice(0, 1)}</span>}
       <span className="timeline-post-author">{authorName}</span>
         {!practice.mention_format && tools.length > 0 && <div className="timeline-post-tags" aria-label="Mentioned tools">
-          {tools.map(tool => <Link className="practice-mention" key={tool.id} to={`/tools/${tool.id}`}>#{tool.slug}</Link>)}
+          {tools.map(tool => <ToolMentionLink key={tool.id} tool={tool}>#{tool.slug}</ToolMentionLink>)}
         </div>}
         <time className="timeline-post-date" dateTime={date}>{formatDate(date)}</time>
         <Link to={`/practice/${practice.id}`} className="timeline-post-action">Read more <span aria-hidden="true">↗</span></Link>
@@ -57,7 +59,7 @@ function PracticePost({ practice, tools, mentions }: {
   </article>
 }
 
-export function TimelineFeed({ practices, tools, mentions, searchQuery, loading, loadingMore, error, onLoadMore, hasMore }: Props) {
+export function TimelineFeed({ practices, tools, mentions, searchQuery, onSearchChange, loading, loadingMore, error, onLoadMore, hasMore }: Props) {
   const [selectedTopic, setSelectedTopic] = useState('all')
 
   const toolsFor = (practice: Practice) => tools[practice.id] ?? []
@@ -76,7 +78,7 @@ export function TimelineFeed({ practices, tools, mentions, searchQuery, loading,
       <header className="feed-heading">
         <div className="feed-views">
           <h1>Practices</h1>
-          <Link to="/tools">Tools</Link>
+          <input type="search" className="feed-search" aria-label="Search practices, authors, and tools" placeholder="Search the feed" value={searchQuery} onChange={e => onSearchChange(e.target.value)} />
         </div>
         <nav className="practice-compose-nav" aria-label="Create">
           <Link to="/tools/new">New tool</Link>

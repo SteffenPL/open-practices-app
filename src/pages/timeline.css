@@ -22,7 +22,7 @@
 .feed-views a { color: var(--timeline-muted); font-size: 1rem; font-weight: 550; }
 .feed-views a:hover, .practice-compose-nav a:hover { text-decoration: underline; text-underline-offset: .22em; }
 .practice-compose-nav { align-items: center; gap: .35rem; }
-.practice-compose-nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 2.5rem; padding: .45rem .9rem; font-size: .85rem; font-weight: 650; border-radius: 99px; }
+.practice-compose-nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 2.5rem; padding: .45rem .9rem; font-size: .85rem; font-weight: 650; border-radius: 3px; }
 .practice-compose-nav .practice-compose-primary { color: var(--app-paper); background: var(--app-accent); }
 .timeline-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(10rem, 13rem); gap: clamp(1.5rem, 4vw, 4rem); }
 .timeline-feed { min-width: 0; }
@@ -38,10 +38,10 @@
 .timeline-post-content { min-width: 0; }
 .timeline-post-content > p { color: var(--timeline-ink); font-size: .94rem; line-height: 1.52; }
 .timeline-post-image-link { display: block; width: fit-content; max-width: 100%; }
-.timeline-post-image { display: block; max-width: 100%; max-height: 320px; margin-top: .62rem; border: 1px solid var(--timeline-rule); border-radius: 10px; object-fit: cover; }
+.timeline-post-image { display: block; max-width: 100%; max-height: 320px; margin-top: .62rem; border: 0; border-radius: 3px; object-fit: cover; }
 .timeline-post-foot { display: flex; min-height: 1.65rem; align-items: center; gap: .6rem; margin-top: .65rem; }
 .timeline-post-tags { display: flex; min-width: 0; flex-wrap: wrap; gap: .3rem; }
-.timeline-post-tags button { min-height: 1.45rem; padding: .2rem .43rem; border: 0; border-radius: 99px; color: var(--timeline-accent); background: color-mix(in srgb, var(--timeline-paper), var(--timeline-pop) 28%); font-size: .64rem; font-weight: 700; }
+.timeline-post-tags button { min-height: 1.45rem; padding: .2rem .43rem; border: 0; border-radius: 3px; color: var(--timeline-accent); background: color-mix(in srgb, var(--timeline-paper), var(--timeline-pop) 28%); font-size: .64rem; font-weight: 700; }
 .timeline-post-tags button:hover, .timeline-post-tags button[aria-pressed='true'] { color: var(--timeline-paper); background: var(--timeline-accent); }
 .timeline-post-tags > span { color: var(--timeline-muted); font-size: .64rem; }
 .timeline-post-date { flex: none; color: var(--timeline-muted); font-size: .65rem; white-space: nowrap; }
@@ -51,7 +51,7 @@
 .timeline-topic-sidebar { position: sticky; top: 5rem; align-self: start; padding-top: 1.5rem; }
 .timeline-sidebar-label { margin-bottom: .45rem !important; color: var(--timeline-muted); font-size: .66rem; font-weight: 750; letter-spacing: .075em; text-transform: uppercase; }
 .timeline-topic-sidebar nav { display: grid; min-width: 0; gap: .18rem; }
-.timeline-topic-sidebar .timeline-topic-option { display: flex; width: 100%; min-width: 0; min-height: 2.45rem; align-items: center; gap: .5rem; padding: .55rem .6rem; border: 0; border-radius: 7px; text-align: left; background: transparent; }
+.timeline-topic-sidebar .timeline-topic-option { display: flex; width: 100%; min-width: 0; min-height: 2.45rem; align-items: center; gap: .5rem; padding: .55rem .6rem; border: 0; border-radius: 3px; text-align: left; background: transparent; }
 .timeline-topic-option b { min-width: 0; overflow-wrap: anywhere; font-size: .83rem; font-weight: 650; }
 .timeline-topic-option > span { margin-left: auto; color: var(--timeline-muted); font-size: .64rem; }
 .timeline-topic-sidebar .timeline-topic-option.is-active { color: var(--timeline-accent); background: color-mix(in srgb, var(--timeline-accent) 10%, transparent); }
@@ -65,8 +65,8 @@
 .timeline-empty { padding: 2.2rem 1rem; text-align: center; }
 .timeline-empty h1 { font-size: 1.12rem; letter-spacing: -.03em; }
 .timeline-empty p { margin-top: .4rem; color: var(--timeline-muted); font-size: .8rem; }
-.timeline-empty a { display: inline-block; margin-top: .95rem; padding: .58rem .85rem; border-radius: 7px; color: var(--timeline-paper); background: var(--timeline-accent); font-size: .75rem; font-weight: 700; }
-.timeline-load-more { display: block; min-height: 2.6rem; margin: 1.2rem auto; padding: .55rem .9rem; border: 1px solid var(--timeline-rule); border-radius: 99px; background: transparent; font-size: .73rem !important; }
+.timeline-empty a { display: inline-block; margin-top: .95rem; padding: .58rem .85rem; border-radius: 3px; color: var(--timeline-paper); background: var(--timeline-accent); font-size: .75rem; font-weight: 700; }
+.timeline-load-more { display: block; min-height: 2.6rem; margin: 1.2rem auto; padding: .55rem .9rem; border: 1px solid var(--timeline-rule); border-radius: 3px; background: transparent; font-size: .73rem !important; }
 .timeline-load-more:disabled { cursor: wait; opacity: .65; }
 .timeline-page a:focus-visible, .timeline-page button:focus-visible, .timeline-page input:focus-visible { outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .timeline-page *, .timeline-page *::before, .timeline-page *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
@@ -80,7 +80,7 @@
   .timeline-topic-sidebar { position: static; align-self: stretch; min-width: 0; order: -1; padding: .15rem 0 .45rem; border-bottom: 1px solid var(--timeline-rule); }
   .timeline-sidebar-label { display: none; }
   .timeline-topic-sidebar nav { display: flex; gap: .3rem; overflow-x: auto; padding: .1rem .05rem .3rem; scrollbar-width: thin; }
-  .timeline-topic-sidebar .timeline-topic-option { width: auto; min-width: auto; min-height: 2.15rem; padding: .43rem .55rem; border: 1px solid var(--timeline-rule); border-radius: 99px; }
+  .timeline-topic-sidebar .timeline-topic-option { width: auto; min-width: auto; min-height: 2.15rem; padding: .43rem .55rem; border: 1px solid var(--timeline-rule); border-radius: 3px; }
   .timeline-topic-option b { font-size: .74rem; white-space: nowrap; }
   .timeline-topic-option > span, .timeline-topic-option .timeline-topic-swatch { display: none; }
   .timeline-post { padding: 1.05rem 0; }
@@ -96,3 +96,6 @@
   .timeline-post-tags button { font-size: .61rem; }
   .timeline-post-date, .timeline-post-action { font-size: .62rem; }
 }
+
+.feed-views { flex-wrap: wrap; gap: .75rem 1.4rem; }
+.app-shell .feed-views input.feed-search[type="search"] { width: 12rem; max-width: 100%; min-height: 2rem; border: 0; border-radius: 2px; padding: .35rem .65rem; font-size: .84rem; background: var(--app-surface); }

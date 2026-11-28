@@ -12,7 +12,7 @@
 .writing-canvas :is(#practice-title,#practice-body):focus-visible { outline: 2px solid var(--app-accent); outline-offset: .35rem; }
 .writing-canvas #mention-help { margin-top: .65rem; font-size: .75rem; }
 .writing-canvas #mention-help kbd { color: var(--app-accent); font: 700 1em monospace; }
-.writing-canvas .mention-menu { width: min(100%, 26rem); padding: .35rem; border-radius: .75rem; box-shadow: 0 .55rem 1.5rem #0002; }
+.writing-canvas .mention-menu { width: min(100%, 26rem); padding: .35rem; border-radius: 3px; box-shadow: 0 .55rem 1.5rem #0002; }
 .writing-canvas .mention-menu button { display: flex; align-items: center; justify-content: space-between; gap: .65rem; min-height: 2.55rem; overflow-wrap: anywhere; }
 .writing-canvas fieldset > details { padding: .8rem 0; }
 .writing-canvas summary { color: var(--app-muted); font-size: .83rem; }
@@ -20,7 +20,7 @@
 .writing-canvas summary small { margin-left: .65rem; font-weight: 400; }
 .writing-canvas .composer-preview[open] > h2 { margin-top: 1rem; }
 .writing-canvas .composer-actions { margin: .45rem 0 .9rem; padding-top: 1.15rem; border-top: 1px solid var(--app-rule); }
-.writing-canvas .composer-actions .primary { border-radius: 2rem; padding-inline: 1.2rem; }
+.writing-canvas .composer-actions .primary { border-radius: 3px; padding-inline: 1.2rem; }
 .writing-canvas .composer-actions a { color: var(--app-muted); font-size: .8rem; }
 .writing-canvas .writing-import { border: 0; }
 .writing-canvas .writing-import summary { font-weight: 400; }

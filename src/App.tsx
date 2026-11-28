@@ -4,6 +4,8 @@ import { HashRouter, Navigate, Route, Routes, useSearchParams } from 'react-rout
 import { isSupabaseConfigured } from './lib/supabase'
 import { AuthProvider } from './auth/AuthContext'
 import { SetupNotice } from './components/SetupNotice'
+import { IntroductionPage } from './pages/IntroductionPage'
+import { AgentsPage } from './pages/AgentsPage'
 import { Header } from './components/Header'
 import { TimelinePage } from './pages/TimelinePage'
 import { PracticePage } from './pages/PracticePage'
@@ -40,15 +42,17 @@ function Shell() {
   }
   return (
     <div className={`app-shell app-theme-${theme}`} data-color-mode={theme === 'night' ? 'dark' : 'light'}>
-      <Header theme={theme} onThemeChange={changeTheme} searchQuery={searchQuery} onSearchChange={changeSearchQuery} />
+      <Header theme={theme} onThemeChange={changeTheme} />
       <Routes>
-        <Route path="/" element={<TimelinePage searchQuery={searchQuery} />} />
+        <Route path="/" element={<TimelinePage searchQuery={searchQuery} onSearchChange={changeSearchQuery} />} />
         <Route path="/practice/:id" element={<PracticePage />} />
         <Route path="/new" element={<MentionPracticeEditor />} />
         <Route path="/edit/:id" element={<MentionPracticeEditor />} />
         <Route path="/tools" element={<CatalogPage />} />
         <Route path="/tools/new" element={<NewToolPage />} />
         <Route path="/tools/:id" element={<ToolPage />} />
+        <Route path="/intro" element={<IntroductionPage />} />
+        <Route path="/agents" element={<AgentsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

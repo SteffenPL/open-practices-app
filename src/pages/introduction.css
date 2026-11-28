@@ -1,0 +1,18 @@
+.intro-page { max-width: 49rem; margin: 0 auto; padding: clamp(1.6rem, 4vw, 3.5rem) 1.1rem 2rem; }
+.intro-page > h1 { font-size: clamp(2.3rem, 6vw, 3.65rem); }
+.intro-page .intro-lead { max-width: 34em; margin: .7rem 0 2.1rem; font-size: clamp(1.1rem, 2vw, 1.3rem); }
+.intro-example { background: var(--app-surface); padding: clamp(1.1rem, 4vw, 2rem); }
+.intro-example blockquote { margin: .8rem 0; color: var(--app-ink); line-height: 1.5; font-size: 1.08rem; }
+.intro-example blockquote a, .intro-links a, .intro-next > a:not(.primary-as-link) { color: var(--app-accent); text-underline-offset: .18em; }
+.intro-example p, .intro-row p { color: var(--app-muted); }
+.intro-command, .intro-next { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+.intro-command { margin-top: .7rem; }
+.intro-command pre { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.intro-command button { border: 0; padding: .2rem 0; min-height: 0; color: var(--app-muted); }
+.intro-outline { margin-top: 2.2rem; }
+.intro-outline h2 { margin-bottom: .5rem; }
+.intro-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 1rem; padding: .95rem 0; border-bottom: 1px solid var(--app-rule); }
+.intro-row h3 { margin: 0; font-size: 1rem; }
+.intro-links { display: flex; flex-wrap: wrap; align-content: center; gap: .25rem .85rem; }
+.intro-next { margin-top: 1.75rem; }
+@media (max-width: 540px) { .intro-row { grid-template-columns: 1fr; gap: .35rem; } }

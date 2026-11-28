@@ -11,7 +11,7 @@
 .tool-row:hover strong, .tool-back:hover { text-decoration:underline; }
 .tool-row p, .tool-match small, .tool-row small { color:var(--app-muted); font-size:.86rem; }
 .tool-install pre { white-space:pre-wrap; word-break:break-word; flex:1 1 15rem; margin:0; }
-.tool-install, .tool-matches { border:1px solid var(--app-rule); border-radius:8px; padding:.8rem; }
+.tool-install, .tool-matches { border:0; border-radius:2px; padding:.8rem; }
 .tool-section { padding-top:1rem; border-top:1px solid var(--app-rule); }
 .tool-page summary { cursor:pointer; font-size:.9rem; }
 .tool-history li { list-style:none; }
@@ -21,12 +21,12 @@
 .tool-editor dd, .tool-history dd { margin:.2rem 0 .6rem; }
 .tool-history ins, .tool-history del { display:block; white-space:pre-wrap; }
 .tool-matches h3 { margin:.2rem 0 .6rem; }
-.tool-merge-confirm { background:var(--app-paper); border-radius:8px; padding:.8rem; }
+.tool-merge-confirm { background:var(--app-paper); border-radius:2px; padding:.8rem; }
 
 .tool-page { max-width: 860px; padding-top: clamp(1.3rem, 4vw, 3rem); }
 .tool-sheet {
   display: flex; flex-direction: column; gap: 1.35rem; min-width: 0;
-  padding: clamp(1.15rem, 5vw, 3.1rem); border: 1px solid var(--app-rule); border-radius: 14px;
+  padding: clamp(1.15rem, 5vw, 3.1rem); border: 0; border-radius: 2px;
   background: var(--app-surface);
 }
 .tool-sheet > .tool-back { width: fit-content; text-decoration: none; }
@@ -79,7 +79,7 @@
 .tool-history summary, .tool-page details.tool-section > summary { min-height: 2.5rem; align-content: center; }
 @media (max-width: 540px) {
   .tool-page { padding: .8rem .5rem 2rem; }
-  .tool-sheet { padding: 1.05rem; gap: 1rem; border-radius: 10px; }
+  .tool-sheet { padding: 1.05rem; gap: 1rem; border-radius: 2px; }
   .tool-heading { align-items: baseline; }
   .tool-list .tool-row { padding: .9rem 0; }
 }
