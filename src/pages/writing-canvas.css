@@ -17,10 +17,7 @@
 .writing-canvas fieldset > details { padding: .8rem 0; }
 .writing-canvas summary { color: var(--app-muted); font-size: .83rem; }
 .writing-canvas summary:focus-visible { outline: 2px solid var(--app-accent); outline-offset: 2px; }
-.writing-canvas .writing-tool-name { color: var(--app-ink); }
-.writing-tool-name b { color: var(--app-accent); }
 .writing-canvas summary small { margin-left: .65rem; font-weight: 400; }
-.writing-canvas .composer-setup[open] textarea { min-height: 3.5rem; background: var(--app-surface); }
 .writing-canvas .composer-preview[open] > h2 { margin-top: 1rem; }
 .writing-canvas .composer-actions { margin: .45rem 0 .9rem; padding-top: 1.15rem; border-top: 1px solid var(--app-rule); }
 .writing-canvas .composer-actions .primary { border-radius: 2rem; padding-inline: 1.2rem; }
