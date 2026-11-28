@@ -209,3 +209,6 @@ body { min-width: 320px; min-height: 100vh; margin: 0; }
 
 .catalog-command-choice { display: flex; flex-wrap: wrap; align-items: baseline; gap: .55rem; margin-bottom: .65rem; }
 .catalog-command-choice code { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.install-preference { max-width: 70rem; margin: 1rem auto 0; padding: 1rem; text-align: center; }
+.install-preference select { margin-left: .25rem; padding: .3rem; font: inherit; color: var(--app-ink); background: var(--app-paper); border: 0; border-bottom: 1px solid var(--app-rule); }

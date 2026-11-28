@@ -1,3 +1,4 @@
+import { installOSLabels, useInstallOS, type InstallOS } from './lib/installCommands'
 import { useState } from 'react'
 import { HashRouter, Navigate, Route, Routes, useSearchParams } from 'react-router-dom'
 import { isSupabaseConfigured } from './lib/supabase'
@@ -11,6 +12,7 @@ import { ProfilePage } from './pages/ProfilePage'
 import { MentionPracticeEditor } from './pages/MentionPracticeEditor'
 
 function Shell() {
+  const [os, setOS] = useInstallOS()
   const [searchParams, setSearchParams] = useSearchParams()
   const [theme, setTheme] = useState<'day' | 'night'>(() => {
     try {
@@ -50,6 +52,11 @@ function Shell() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <footer className="install-preference">
+        <label>Install commands for <select value={os} onChange={event => setOS(event.target.value as InstallOS)}>
+          {Object.entries(installOSLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select></label>
+      </footer>
     </div>
   )
 }
