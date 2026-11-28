@@ -21,15 +21,11 @@ Choose **New tool** to contribute a catalog entry directly. Contributors can mai
 
 ## Manage your own skills repository
 
-Open [My skills](https://steffenpl-share.exe.xyz/open-practices/#/my-skills), enter a repository as `owner/repository`, and select catalog packages or write a skill. **Save collection** saves a private draft in your Open Practices account. Only you can read it there.
+Open [My skills](https://steffenpl-share.exe.xyz/open-practices/#/my-skills) to select catalog packages or write skills. **Save collection** saves a private draft. **Download ZIP** exports its manifest and skill folders. **API access** opens the grant page with the private collection scope selected.
 
-Create the repository on GitHub and initialize it with a README so it has a branch. In **My skills**, enter its owner, name, and branch. Load the branch to inspect its `apm.yml` and authored skills under `.apm/skills/<name>/SKILL.md`. Public repositories can be read anonymously. To read a private repository or commit changes, create a fine-grained GitHub token restricted to that repository. Contents read access permits loading, and Contents read and write permits committing. The token stays in the browser tab's memory and is sent directly to GitHub.
+GitHub is optional. Leave Repository empty to work entirely through ZIP or API. Enter an `owner/repository` and branch to **Import from GitHub**. Public imports need no token. A fine-grained token for the selected repository enables private reads and, with Contents write permission, **Publish to GitHub**. Publishing sends the affected files in one commit. If the branch changes, the app asks you to import again.
 
-Review the proposed file changes, enter a commit message, and confirm the commit. The files are published together on the selected branch. If the branch changed since the review, reload and review the changes again. For a protected default branch, use a writable branch and complete the pull request on GitHub.
-
-You can also download source files as a ZIP, use GitHub’s file editor, or merge selected dependencies into a local copy of an existing manifest.
-
-Once the files are on the default branch, run `apm install owner/repository` in a consuming project. Each installer needs GitHub read access to a private repository and to any private dependencies. Publishing and repository permissions stay under the user's GitHub account.
+Enable **Publish when I save** to publish after a successful save from this browser. Editing a field or using the API does not publish. The token stays in the browser tab. After publication to the default branch, the collection installs with `apm install owner/repository`; each installer needs read access to private dependencies.
 
 ## Local development
 

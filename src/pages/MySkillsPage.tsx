@@ -1,66 +1,42 @@
-import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { GitHubSkillsPanel } from '../components/GitHubSkillsPanel'
-import { ExistingManifest } from '../components/ExistingManifest'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { GitHubSkillsPanel, type GitHubSkillsPanelHandle } from '../components/GitHubSkillsPanel'
+import { generateSkillsExport } from '../lib/mySkillsExport'
 import { useAuth } from '../auth/useAuth'
-import { CopyCommandButton } from '../components/PracticeCommands'
 import { listTools, type CatalogTool } from '../lib/catalogService'
 import { loadMySkills, saveMySkills, MySkillsConflictError, type MySkillsConfig } from '../lib/mySkillsService'
-import { buildSkillsRepository, downloadRepositoryFile, githubNewFileURL, githubRepositoryURL, isGitHubRepository, isPackageIdentifier, type RepositoryFile } from '../lib/skillsRepository'
+import { isGitHubRepository, isPackageIdentifier } from '../lib/skillsRepository'
 import { downloadRepositoryArchive } from '../lib/skillsArchive'
 import './my-skills.css'
 
 const failure = (cause:unknown) => cause instanceof Error ? cause.message : 'Could not complete the request.'
 const empty: MySkillsConfig = {repo:'', selected_packages:[], drafts:[]}
 
-function FilePreview({file, repo, branch}: {file:RepositoryFile; repo:string; branch:string}) {
-  const editor = githubNewFileURL(repo, file, branch)
-  const emptyEditor = !editor && githubNewFileURL(repo,{...file,content:''},branch)
-  const existingFile = (editor || emptyEditor) && githubRepositoryURL(repo) + '/edit/' +
-    [...branch.split('/'), ...file.path.split('/')].map(encodeURIComponent).join('/')
-  return <details className="skills-file">
-    <summary>{file.path}</summary>
-    <pre>{file.content}</pre>
-    <div className="skills-actions">
-      <button type="button" onClick={() => downloadRepositoryFile(file)}>Download file</button>
-      <CopyCommandButton text={file.content} label={'Copy '+file.path}/>
-      {(editor || emptyEditor) && <a href={editor || emptyEditor || undefined} target="_blank" rel="noreferrer">{editor ? 'Create file on GitHub ↗' : 'Open empty editor ↗'}</a>}
-      {existingFile && <a href={existingFile} target="_blank" rel="noreferrer">Edit existing file ↗</a>}
-    </div>
-  </details>
+function preference(key:string) {
+  try { return window.localStorage.getItem(key) } catch { return null }
 }
-
-function generate(config:MySkillsConfig) {
-  const base = buildSkillsRepository(config.repo, config.selected_packages)
-  const files: RepositoryFile[] = [base.manifest]
-  const problems:string[] = []
-  for (const [index,draft] of config.drafts.entries()) {
-    try {
-      const {skill} = buildSkillsRepository(config.repo,config.selected_packages,{name:draft.name,description:draft.description,instructions:draft.body})
-      if (skill) {
-        if (files.some(file => file.path === skill.path)) throw new Error('Give each skill a different name.')
-        files.push(skill)
-      }
-    } catch(cause) {problems.push(`Skill ${index+1} · ${failure(cause)}`)}
-  }
-  return {files,problems}
-}
-
-function RepositoryPrivacy() {
-  return <p className="muted">Choose Private on GitHub to limit access. Each person installing a private collection needs read access to the repository and its private dependencies.</p>
+function remember(key:string,value:string) {
+  try { window.localStorage.setItem(key,value) } catch { /* Keep settings usable in this tab. */ }
 }
 
 export function MySkillsPage() {
   const {session, loading, signInWithGoogle} = useAuth()
   if (loading) return <main className="page" role="status">Loading account…</main>
-  if (!session) return <main className="page my-skills"><h1>My skills</h1><p className="skills-intro">Select catalog packages, write your own skills, then review and commit the generated files to your GitHub repository.</p><RepositoryPrivacy/><button onClick={() => void signInWithGoogle()}>Continue with Google</button></main>
-  return <SkillsEditor key={session.user.id}/>
+  if (!session) return <main className="page my-skills"><h1>My skills</h1><p className="skills-intro">Keep a personal collection of packages and skills. Export it as a ZIP, use it with an agent, or connect a GitHub repository.</p><button onClick={() => void signInWithGoogle()}>Continue with Google</button></main>
+  return <SkillsEditor key={session.user.id} owner={session.user.id}/>
 }
 
-function SkillsEditor() {
+function SkillsEditor({ owner }: {owner:string}) {
   const [search] = useSearchParams()
   const requestedPackage = search.get('add')
   const [branch,setBranch] = useState('main')
+  const [token,setToken] = useState('')
+  const [credentialEpoch,setCredentialEpoch] = useState(0)
+  const usedCredential = useRef(false)
+  const [syncBusy,setSyncBusy] = useState(false)
+  const saving = useRef(false)
+  const panel = useRef<GitHubSkillsPanelHandle>(null)
+  const [autoChoice,setAutoChoice] = useState<{key:string;enabled:boolean} | null>(null)
   const [conflict,setConflict] = useState(false)
   const [config,setConfig] = useState<MySkillsConfig>(empty)
   const [saved,setSaved] = useState<MySkillsConfig>(empty)
@@ -81,20 +57,48 @@ function SkillsEditor() {
       const config = record.config
       setConfig(preselect && !config.selected_packages.includes(requestedPackage)
         ? {...config, selected_packages:[...config.selected_packages,requestedPackage]} : config)
+      setBranch(preference('op-branch/'+owner+'/'+config.repo.toLowerCase()) || 'main')
       setSaved(config); setVersion(record.version); setConflict(false)
       setTools(catalog.filter(tool => tool.apm_id && isPackageIdentifier(tool.apm_id)))
       setReady(true)
     }).catch(cause => {if (active) setError(failure(cause))})
     return () => {active = false}
-  }, [retry,requestedPackage])
+  }, [retry,requestedPackage,owner])
 
+  const validRepo = isGitHubRepository(config.repo)
+  const connection = validRepo ? (token.trim() ? 'Import & publish' : 'Import only') : 'Off'
+  const autoKey = 'op-publish-on-save/'+owner+'/'+config.repo.toLowerCase()+'/'+branch
+  const publishOnSave = validRepo && !!branch.trim() && !!token.trim() &&
+    (autoChoice?.key === autoKey ? autoChoice.enabled : preference(autoKey) === 'on')
+  function updateRepo(repo:string) {
+    setToken(''); usedCredential.current=false
+    setBranch(preference('op-branch/'+owner+'/'+repo.toLowerCase()) || 'main')
+    change({...config,repo})
+  }
+  function updateToken(value:string) {
+    if (usedCredential.current && value !== token) {
+      setCredentialEpoch(epoch=>epoch+1)
+      usedCredential.current=false
+    }
+    setToken(value)
+  }
+  function syncActivity(active:boolean) {
+    if (active && token.trim()) usedCredential.current=true
+    setSyncBusy(active)
+  }
   async function save() {
+    if (saving.current || syncBusy) return
+    saving.current=true
     setBusy(true); setError(''); setStatus('')
     try {
       const result = await saveMySkills(config,version)
       setVersion(result.version); setSaved(result.config); setConfig(result.config); setStatus('Saved to your account.')
+      if (publishOnSave && panel.current) {
+        try { await panel.current.syncSaved(result.config) }
+        catch { setStatus('Saved to your account. GitHub has not been updated.') }
+      }
     } catch (cause) { setError(failure(cause)); setConflict(cause instanceof MySkillsConflictError) }
-    finally { setBusy(false) }
+    finally { saving.current=false; setBusy(false) }
   }
   function change(next:MySkillsConfig) {
     setConfig(next); setStatus(''); if (!conflict) setError('')
@@ -109,28 +113,28 @@ function SkillsEditor() {
   for (const id of config.selected_packages) if (!packages.has(id)) packages.set(id,id)
   const term = query.trim().toLowerCase()
   const filtered = [...packages].filter(([id,name]) => (id+' '+name).toLowerCase().includes(term))
-  const validRepo = isGitHubRepository(config.repo)
-  let bundle:ReturnType<typeof generate> | undefined
-  let problem = ''
-  if (validRepo) {
-    try {bundle=generate(config)} catch(cause) {problem=failure(cause)}
-  } else if (config.repo) problem='Enter your GitHub owner and repository as owner/repository.'
+  const bundle = generateSkillsExport(validRepo ? config : {...config,repo:''})
   const changed = JSON.stringify(saved) !== JSON.stringify(config)
   return <main className="page my-skills">
     <h1>My skills</h1>
     <p className="skills-intro">Build an installable collection of catalog packages and your own skills.</p>
     {!ready && !error && <p role="status">Loading your repository…</p>}
     {error && <p role="alert" className="error">{error} {(!ready || conflict) && <button onClick={() => setRetry(retry+1)}>{conflict ? 'Discard local edits and reload' : 'Retry'}</button>}</p>}
-    {ready && <fieldset disabled={busy}>
-      <section><h2>Repository</h2>
-        <label>GitHub owner/repository<input value={config.repo} autoCapitalize="none" spellCheck={false} placeholder="octocat/my-skills" onChange={e => change({...config,repo:e.target.value})}/></label>
-        <RepositoryPrivacy/>
-        {validRepo && <div className="skills-actions">
-          <a href={githubRepositoryURL(config.repo)} target="_blank" rel="noreferrer">View repository ↗</a>
-          <a href={'https://github.com/new?'+new URLSearchParams({owner:config.repo.split('/')[0],name:config.repo.split('/')[1]})} target="_blank" rel="noreferrer">Create repository ↗</a>
-        </div>}
-        {validRepo && <><label>GitHub branch<input value={branch} onChange={e => setBranch(e.target.value)} placeholder="main"/></label>
-          <GitHubSkillsPanel key={config.repo+'/'+branch} config={config} branch={branch} dirty={changed} onImport={change}/></>}
+    {ready && <fieldset disabled={busy || syncBusy}>
+      <section className="collection-connection">
+        <div className="connection-heading"><h2>GitHub</h2><span>{connection}</span></div>
+        <div className="connection-fields">
+          <label>Repository <input type="search" value={config.repo} autoCapitalize="none" spellCheck={false} placeholder="Optional · owner/repository" onChange={e => updateRepo(e.target.value)}/></label>
+          {validRepo && <label>Branch<input value={branch} onChange={e => {const next=e.target.value;setBranch(next);remember('op-branch/'+owner+'/'+config.repo.toLowerCase(),next)}} placeholder="main"/></label>}
+        </div>
+        {!config.repo && <p className="muted">Leave this empty to use ZIP downloads or the API.</p>}
+        {config.repo && !validRepo && <p className="muted">Enter the repository as owner/repository.</p>}
+        {validRepo && <>
+          <label>GitHub token <input type="password" value={token} onChange={e=>updateToken(e.target.value)} autoComplete="off" spellCheck={false} placeholder="Optional · enable private access and publishing"/></label>
+          <p className="muted">Public imports work without a token. To publish, use a token with Contents write access to this repository. It stays in this tab. <a target="_blank" rel="noreferrer" href={'https://github.com/settings/personal-access-tokens/new?'+new URLSearchParams({name:'Open Practices skills',target_name:config.repo.split('/')[0],expires_in:'7',contents:'write'})}>Create a token ↗</a></p>
+          {branch.trim() && <GitHubSkillsPanel key={JSON.stringify([config.repo,branch,credentialEpoch])} ref={panel} config={config} branch={branch} token={token.trim()} dirty={changed} onImport={change}
+            autoSync={publishOnSave} onAutoSyncChange={enabled=>{remember(autoKey,enabled?'on':'off');setAutoChoice({key:autoKey,enabled})}} onBusyChange={syncActivity}/>}
+        </>}
       </section>
       <section><h2>Catalog packages</h2>
         <label>Find a package<input type="search" placeholder="Search names or package identifiers" value={query} onChange={e => setQuery(e.target.value)}/></label>
@@ -149,16 +153,14 @@ function SkillsEditor() {
         </div>)}
         <button type="button" onClick={() => change({...config,drafts:[...config.drafts,{id:crypto.randomUUID(),name:'',description:'',body:''}]})}>Add a skill</button>
       </section>
-      <div className="skills-actions"><button className="primary" disabled={!changed || busy || conflict} onClick={() => void save()}>{busy?'Saving…':'Save collection'}</button>{status && <span role="status">{status}</span>}</div>
-      {problem && <p role="status" className="muted">{problem}</p>}
-      {bundle?.problems.map(message => <p key={message} className="muted">{message}</p>)}
-      {bundle && <section><h2>Repository files</h2>
-        <p>Review each file, then commit it on GitHub. For an existing apm.yml, merge the dependencies into your manifest and keep its other settings.</p>
-        {bundle.files.map(file => <FilePreview key={file.path} file={file} repo={config.repo} branch={branch}/>)}
-        <button type="button" onClick={() => downloadRepositoryArchive(config.repo,bundle.files)}>Download repository files (.zip)</button>
-        <ExistingManifest repository={config.repo} packages={config.selected_packages} branch={branch}/>
-        <h3>Install after committing</h3><div className="skills-install"><code>apm install {config.repo}</code><CopyCommandButton text={'apm install '+config.repo} label="Copy install command"/></div>
-      </section>}
+      <div className="skills-actions collection-actions">
+        <button className="primary" disabled={!changed || busy || conflict} onClick={() => void save()}>{busy?'Saving…':publishOnSave?'Save and publish':'Save collection'}</button>
+        <button type="button" disabled={bundle.problems.length>0} onClick={() => downloadRepositoryArchive(validRepo?config.repo:'',bundle.files)}>Download ZIP</button>
+        <Link to="/agents?scope=my-skills">API access</Link>
+      </div>
+      {status && <p role="status">{status}</p>}
+      {validRepo && <p className="collection-install">Install from the default branch <code>apm install {config.repo}</code></p>}
+      {bundle.problems.map(message => <p key={message} className="muted">{message}</p>)}
     </fieldset>}
   </main>
 }

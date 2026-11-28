@@ -5,19 +5,21 @@
 .my-skills section { display: grid; gap: .7rem; margin: 1.4rem 0; padding-top: 1.25rem; border-top: 1px solid var(--app-rule); }
 .my-skills section > button, .skills-draft > button { justify-self: start; }
 .my-skills label { display: grid; gap: .25rem; }
-.my-skills summary { cursor: pointer; }
 .skills-packages { max-height: 14rem; overflow-y: auto; }
 .skills-packages label { display: flex; gap: .6rem; align-items: baseline; padding: .45rem 0; }
 .skills-packages label span { min-width: 0; }
 .skills-packages code { display: block; overflow-wrap: anywhere; }
-.skills-actions, .skills-install { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; font-size: .85rem; }
+.skills-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; font-size: .85rem; }
 .skills-actions a { text-underline-offset: .2em; }
-.skills-file { padding: .6rem 0; border-top: 1px solid var(--app-rule); }
-.skills-file pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
 .skills-draft { display: grid; gap: .65rem; padding: .5rem 0 1rem; }
-.skills-github-panel { margin-top: .35rem; border-top: 1px solid var(--app-rule); padding: .75rem 0; }
-.skills-github-panel > fieldset { min-width: 0; border: 0; padding: .8rem 0; margin: 0; display: grid; gap: .65rem; }
-.skills-sync-review { display: grid; gap: .6rem; min-width: 0; }
-.skills-sync-review > button { justify-self: start; }
-.skills-sync-review h3, .skills-sync-review h4 { margin: .45rem 0 0; }
-.skills-sync-review pre { max-height: 18rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
+.collection-connection .connection-heading { display:flex; gap:.8rem; align-items:baseline; }
+.connection-heading span { color:var(--app-muted); font-size:.78rem; }
+.connection-fields { display:grid; gap:.65rem; grid-template-columns:minmax(0,1fr) auto; }
+.connection-fields label:only-child { grid-column:1/-1; }
+.connection-fields label:nth-child(2) { width:8rem; }
+.collection-actions { padding-top:1rem; border-top:1px solid var(--app-rule); }
+@media(max-width:480px) { .connection-fields label:nth-child(2) { width:5rem; } }
+
+.collection-install { padding-top: .75rem; color: var(--app-muted); font-size: .85rem; }
+.collection-install code { overflow-wrap: anywhere; user-select: all; }
+.connection-fields label, .connection-fields input { min-width: 0; }
