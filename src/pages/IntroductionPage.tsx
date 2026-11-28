@@ -39,6 +39,6 @@ export function IntroductionPage() {
         <div className="intro-links">{tools.map(tool => toolLink(tool))}</div>
       </div>)}
     </section>
-    <div className="intro-next"><Link to="/new" className="primary-as-link">Write a practice</Link><Link to="/agents">Use an agent →</Link></div>
+    <div className="intro-next"><Link to="/new" className="primary-as-link">Write a practice</Link><Link to="/my-skills">Build your own skills collection</Link><Link to="/agents">Use an agent →</Link></div>
   </main>
 }

@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from './lib/supabase'
 import { AuthProvider } from './auth/AuthContext'
 import { SetupNotice } from './components/SetupNotice'
 import { IntroductionPage } from './pages/IntroductionPage'
+import { MySkillsPage } from './pages/MySkillsPage'
 import { AgentsPage } from './pages/AgentsPage'
 import { Header } from './components/Header'
 import { TimelinePage } from './pages/TimelinePage'
@@ -51,6 +52,7 @@ function Shell() {
         <Route path="/tools" element={<CatalogPage />} />
         <Route path="/tools/new" element={<NewToolPage />} />
         <Route path="/tools/:id" element={<ToolPage />} />
+        <Route path="/my-skills" element={<MySkillsPage />} />
         <Route path="/intro" element={<IntroductionPage />} />
         <Route path="/agents" element={<AgentsPage />} />
         <Route path="/profile" element={<ProfilePage />} />

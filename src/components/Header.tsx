@@ -24,6 +24,7 @@ export function Header({ theme, onThemeChange }: Props) {
         <nav className="section-nav" aria-label="Explore Open Practices">
           <NavLink to="/" end>Practices</NavLink>
           <NavLink to="/tools">Tools</NavLink>
+          <NavLink to="/my-skills">My skills</NavLink>
           <NavLink to="/intro">Introduction</NavLink>
           <NavLink to="/agents">Agents</NavLink>
         </nav>

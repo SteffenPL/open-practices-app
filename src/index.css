@@ -221,3 +221,9 @@ body { min-width: 320px; min-height: 100vh; margin: 0; }
 @media (max-width: 760px) {
   .section-nav { grid-row: 2; grid-column: 1 / -1; }
 }
+
+.existing-manifest > summary { cursor: pointer; }
+.existing-manifest > p, .existing-manifest > .manifest-actions { margin-top: .65rem; }
+.existing-manifest pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 20rem; overflow: auto; }
+.manifest-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.manifest-actions input { max-width: 100%; }

@@ -109,6 +109,7 @@ export function ProfilePage() {
           <p className="muted">Couldn't save — check your connection.</p>
         )}
         <hr />
+        <Link to="/my-skills">My skills repository</Link>
         <Link to="/agents">Agent instructions and temporary grants</Link>
       </div>
     </main>
