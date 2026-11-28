@@ -229,13 +229,7 @@ function Composer({ id, userId }: { id?: string; userId: string }) {
             : <p className="muted">Generated from the tools in your message. Edit to customize for {osName}.</p>}
         </details>
         {distinctPracticeTools(mentions).map(mention => <details key={mention.tool_id} className="composer-setup">
-          <summary><span className="writing-tool-name"><b aria-hidden="true">#</b> {mention.tool.name}</span><small>Optional setup</small></summary>
-          <label htmlFor={'command-'+mention.tool_id}>Install command</label>
-          <textarea id={'command-'+mention.tool_id} rows={2} maxLength={8000} value={mention.install_command ?? ''} onChange={event => changeSetup(mention.tool_id,'command',event.target.value)} />
-          {mention.tool.install_command && mention.install_command !== mention.tool.install_command && <div className="catalog-command-choice">
-            <code>{mention.tool.install_command}</code>
-            <button type="button" onClick={() => changeSetup(mention.tool_id,'command',mention.tool.install_command!)}>Use catalog command</button>
-          </div>}
+          <summary><span className="writing-tool-name"><b aria-hidden="true">#</b> {mention.tool.name}</span><small>Setup notes</small></summary>
           <label htmlFor={'notes-'+mention.tool_id}>Setup notes</label>
           <textarea id={'notes-'+mention.tool_id} rows={2} maxLength={12000} value={mention.notes ?? ''} onChange={event => changeSetup(mention.tool_id,'notes',event.target.value)} />
         </details>)}
